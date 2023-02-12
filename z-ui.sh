@@ -88,7 +88,7 @@ before_show_menu() {
 }
 
 install() {
-    bash <(curl -Ls https://raw.githubusercontent.com/ozipoetra/z-ui-english/main/install.sh)
+    bash <(curl -Ls https://raw.githubusercontent.com/ozipoetra/z-ui/main/install.sh)
     if [[ $? == 0 ]]; then
         if [[ $# == 0 ]]; then
             start
@@ -107,28 +107,28 @@ update() {
             rm -rf /usr/local/z-ui/
         fi
         
-        last_version=$(curl -Ls "https://api.github.com/repos/ozipoetra/z-ui-english/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || last_version=$(curl -sm8 https://raw.githubusercontent.com/ozipoetra/z-ui-english/main/config/version)
+        last_version=$(curl -Ls "https://api.github.com/repos/ozipoetra/z-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || last_version=$(curl -sm8 https://raw.githubusercontent.com/ozipoetra/z-ui/main/config/version)
         if [[ -z "$last_version" ]]; then
             red "Detecting the z-ui version failed, please make sure your server can connect to the GitHub API"
             exit 1
         fi
         
         yellow "The latest version of z-ui is: $ {last_version}, starting update..."
-        wget -N --no-check-certificate -O /usr/local/z-ui-linux-$(archAffix).tar.gz https://github.com/ozipoetra/z-ui-english/releases/download/${last_version}/z-ui-linux-$(archAffix).tar.gz
+        wget -N --no-check-certificate -O /usr/local/z-ui.zip https://github.com/ozipoetra/z-ui/releases/download/v1.2/z-ui.zip
         if [[ $? -ne 0 ]]; then
             red "Download the z-ui failure, please make sure your server can connect and download the files from github"
             exit 1
         fi
         
         cd /usr/local/
-        tar zxvf z-ui-linux-$(archAffix).tar.gz
+        unzip z-ui.zip
         rm -f z-ui-linux-$(archAffix).tar.gz
         
         cd z-ui
-        chmod +x z-ui bin/xray-linux-$(archAffix)
+        chmod +x z-ui bin/xray-linux-amd64
         cp -f z-ui.service /etc/systemd/system/
         
-        wget -N --no-check-certificate https://raw.githubusercontent.com/ozipoetra/z-ui-english/main/z-ui.sh -O /usr/bin/z-ui
+        wget -N --no-check-certificate https://raw.githubusercontent.com/ozipoetra/z-ui/main/z-ui.sh -O /usr/bin/z-ui
         chmod +x /usr/local/z-ui/z-ui.sh
         chmod +x /usr/bin/z-ui
         
@@ -324,7 +324,7 @@ install_bbr() {
 }
 
 update_shell() {
-    wget -O /usr/bin/z-ui -N --no-check-certificate https://github.com/ozipoetra/z-ui-english/raw/master/z-ui.sh
+    wget -O /usr/bin/z-ui -N --no-check-certificate https://github.com/ozipoetra/z-ui/raw/main/z-ui.sh
     if [[ $? != 0 ]]; then
         echo ""
         red "Downloading the script failed, please make sure your server can connect and download the files from github"
@@ -576,7 +576,7 @@ show_menu() {
         13) check_install && disable_xui ;;
         14) update_geo ;;
         15) install_bbr ;;
-        16) wget -N --no-check-certificate https://raw.githubusercontent.com/ozipoetra/z-ui-english/main/acme.sh && bash acme.sh && before_show_menu ;;
+        16) wget -N --no-check-certificate https://raw.githubusercontent.com/ozipoetra/z-ui/main/acme.sh && bash acme.sh && before_show_menu ;;
         17) open_ports ;;
         18) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/warp.sh && bash warp.sh && before_show_menu ;;
         *) red "Please enter the correct option [0-18]" ;;

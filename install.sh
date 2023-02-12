@@ -112,14 +112,14 @@ download_xui(){
 
     
     if [ $# == 0 ]; then
-        last_version=$(curl -Ls "https://api.github.com/repos/ozipoetra/z-ui-english/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || last_version=$(curl -sm8 https://raw.githubusercontent.com/ozipoetra/z-ui-english/main/config/version >/dev/null 2>&1)
+        last_version=$(curl -Ls "https://api.github.com/repos/ozipoetra/z-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || last_version=$(curl -sm8 https://raw.githubusercontent.com/ozipoetra/z-ui/main/config/version >/dev/null 2>&1)
         if [[ -z "$last_version" ]]; then
             red "Detecting the z-ui version failed, please make sure your server can connect to the Github API"
             rm -f install.sh
             exit 1
         fi
         yellow "The latest version of z-ui is detected: $ {last_version}, starting installation..."
-        wget -N --no-check-certificate -O /usr/local/z-ui-linux-$(archAffix).tar.gz https://github.com/ozipoetra/z-ui-english/releases/download/${last_version}/z-ui-linux-$(archAffix).tar.gz
+        wget -N --no-check-certificate -O /usr/local/z-ui.zip https://github.com/ozipoetra/z-ui/releases/download/v1.2/z-ui.zip
         if [[ $? -ne 0 ]]; then
             red "Download the z-ui failure, please make sure your server can connect and download files from github"
             rm -f install.sh
@@ -127,9 +127,9 @@ download_xui(){
         fi
     else
         last_version=$1
-        url="https://github.com/ozipoetra/z-ui-english/releases/download/${last_version}/z-ui-linux-$(archAffix).tar.gz"
+        url="https://github.com/ozipoetra/z-ui/releases/download/v1.2/z-ui.zip"
         yellow "Starting installation z-ui $1"
-        wget -N --no-check-certificate -O /usr/local/z-ui-linux-$(archAffix).tar.gz ${url}
+        wget -N --no-check-certificate -O /usr/local/z-ui.zip ${url}
         if [[ $? -ne 0 ]]; then
             red "Download z-ui V $ 1 Failure, please make sure this version exists"
             rm -f install.sh
@@ -138,14 +138,14 @@ download_xui(){
     fi
     
     cd /usr/local/
-    tar zxvf z-ui-linux-$(archAffix).tar.gz
-    rm -f z-ui-linux-$(archAffix).tar.gz
+    unzip z-ui.zip
+    rm -f z-ui.zip
     
     cd z-ui
-    chmod +x z-ui bin/ozip-linux-$(archAffix)
+    chmod +x z-ui bin/ozip-linux-amd64
     cp -f z-ui.service /etc/systemd/system/
     
-    wget -N --no-check-certificate https://raw.githubusercontent.com/ozipoetra/z-ui-english/main/z-ui.sh -O /usr/bin/z-ui
+    wget -N --no-check-certificate https://raw.githubusercontent.com/ozipoetra/z-ui/main/z-ui.sh -O /usr/bin/z-ui
     chmod +x /usr/local/z-ui/z-ui.sh
     chmod +x /usr/bin/z-ui
 }
@@ -177,8 +177,8 @@ install_xui() {
         read -rp "Please enter the option [y/n, default n]: " yn
         if [[ $yn =~ "Y"|"y" ]]; then
             cd
-            mv /etc/z-ui/z-ui.db /etc/z-ui-english.db.bak # Backing up Chinese z-ui db (if any)
-            mv /etc/z-ui-english/z-ui-english.db /etc/z-ui-english.db.bak # Backing up English z-ui db 
+            mv /etc/z-ui/z-ui.db /etc/z-ui.db.bak # Backing up Chinese z-ui db (if any)
+            mv /etc/z-ui/z-ui.db /etc/z-ui.db.bak # Backing up English z-ui db 
             systemctl stop z-ui
             systemctl disable z-ui
             rm /etc/systemd/system/z-ui.service -f
@@ -199,8 +199,8 @@ install_xui() {
     download_xui $1
     
     cd
-    mkdir /etc/z-ui-english #makidng a directory to import the backup
-    mv /etc/z-ui-english.db.bak /etc/z-ui-english/z-ui-english.db # Importing the backed up db
+    mkdir /etc/z-ui #makidng a directory to import the backup
+    mv /etc/z-ui.db.bak /etc/z-ui/z-ui.db # Importing the backed up db
     
     panel_config
     
