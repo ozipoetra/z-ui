@@ -112,42 +112,42 @@ download_xui(){
 
     
     if [ $# == 0 ]; then
-        last_version=$(curl -Ls "https://api.github.com/repos/NidukaAkalanka/x-ui-english/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || last_version=$(curl -sm8 https://raw.githubusercontent.com/NidukaAkalanka/x-ui-english/main/config/version >/dev/null 2>&1)
+        last_version=$(curl -Ls "https://api.github.com/repos/ozipoetra/z-ui-english/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || last_version=$(curl -sm8 https://raw.githubusercontent.com/ozipoetra/z-ui-english/main/config/version >/dev/null 2>&1)
         if [[ -z "$last_version" ]]; then
-            red "Detecting the X-UI version failed, please make sure your server can connect to the Github API"
+            red "Detecting the z-ui version failed, please make sure your server can connect to the Github API"
             rm -f install.sh
             exit 1
         fi
-        yellow "The latest version of X-UI is detected: $ {last_version}, starting installation..."
-        wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(archAffix).tar.gz https://github.com/NidukaAkalanka/x-ui-english/releases/download/${last_version}/x-ui-linux-$(archAffix).tar.gz
+        yellow "The latest version of z-ui is detected: $ {last_version}, starting installation..."
+        wget -N --no-check-certificate -O /usr/local/z-ui-linux-$(archAffix).tar.gz https://github.com/ozipoetra/z-ui-english/releases/download/${last_version}/z-ui-linux-$(archAffix).tar.gz
         if [[ $? -ne 0 ]]; then
-            red "Download the X-UI failure, please make sure your server can connect and download files from github"
+            red "Download the z-ui failure, please make sure your server can connect and download files from github"
             rm -f install.sh
             exit 1
         fi
     else
         last_version=$1
-        url="https://github.com/NidukaAkalanka/x-ui-english/releases/download/${last_version}/x-ui-linux-$(archAffix).tar.gz"
-        yellow "Starting installation x-ui $1"
-        wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(archAffix).tar.gz ${url}
+        url="https://github.com/ozipoetra/z-ui-english/releases/download/${last_version}/z-ui-linux-$(archAffix).tar.gz"
+        yellow "Starting installation z-ui $1"
+        wget -N --no-check-certificate -O /usr/local/z-ui-linux-$(archAffix).tar.gz ${url}
         if [[ $? -ne 0 ]]; then
-            red "Download X-UI V $ 1 Failure, please make sure this version exists"
+            red "Download z-ui V $ 1 Failure, please make sure this version exists"
             rm -f install.sh
             exit 1
         fi
     fi
     
     cd /usr/local/
-    tar zxvf x-ui-linux-$(archAffix).tar.gz
-    rm -f x-ui-linux-$(archAffix).tar.gz
+    tar zxvf z-ui-linux-$(archAffix).tar.gz
+    rm -f z-ui-linux-$(archAffix).tar.gz
     
-    cd x-ui
-    chmod +x x-ui bin/xray-linux-$(archAffix)
-    cp -f x-ui.service /etc/systemd/system/
+    cd z-ui
+    chmod +x z-ui bin/ozip-linux-$(archAffix)
+    cp -f z-ui.service /etc/systemd/system/
     
-    wget -N --no-check-certificate https://raw.githubusercontent.com/NidukaAkalanka/x-ui-english/main/x-ui.sh -O /usr/bin/x-ui
-    chmod +x /usr/local/x-ui/x-ui.sh
-    chmod +x /usr/bin/x-ui
+    wget -N --no-check-certificate https://raw.githubusercontent.com/ozipoetra/z-ui-english/main/z-ui.sh -O /usr/bin/z-ui
+    chmod +x /usr/local/z-ui/z-ui.sh
+    chmod +x /usr/bin/z-ui
 }
 
 panel_config() {
@@ -165,53 +165,53 @@ panel_config() {
             [[ -z $config_port ]] && config_port=$(shuf -i 1000-65535 -n 1)
         fi
     done
-    /usr/local/x-ui/x-ui setting -username ${config_account} -password ${config_password} >/dev/null 2>&1
-    /usr/local/x-ui/x-ui setting -port ${config_port} >/dev/null 2>&1
+    /usr/local/z-ui/z-ui setting -username ${config_account} -password ${config_password} >/dev/null 2>&1
+    /usr/local/z-ui/z-ui setting -port ${config_port} >/dev/null 2>&1
 }
 
 install_xui() {
     info_bar
     
-    if [[ -e /usr/local/x-ui/ ]]; then
-        yellow "The X-UI panel has been installed at present. Please confirm you want to update it. There would not be any data loss."
+    if [[ -e /usr/local/z-ui/ ]]; then
+        yellow "The z-ui panel has been installed at present. Please confirm you want to update it. There would not be any data loss."
         read -rp "Please enter the option [y/n, default n]: " yn
         if [[ $yn =~ "Y"|"y" ]]; then
             cd
-            mv /etc/x-ui/x-ui.db /etc/x-ui-english.db.bak # Backing up Chinese X-UI db (if any)
-            mv /etc/x-ui-english/x-ui-english.db /etc/x-ui-english.db.bak # Backing up English X-UI db 
-            systemctl stop x-ui
-            systemctl disable x-ui
-            rm /etc/systemd/system/x-ui.service -f
+            mv /etc/z-ui/z-ui.db /etc/z-ui-english.db.bak # Backing up Chinese z-ui db (if any)
+            mv /etc/z-ui-english/z-ui-english.db /etc/z-ui-english.db.bak # Backing up English z-ui db 
+            systemctl stop z-ui
+            systemctl disable z-ui
+            rm /etc/systemd/system/z-ui.service -f
             systemctl daemon-reload
             systemctl reset-failed 
-            rm /etc/x-ui/ -rf
-            rm /usr/local/x-ui/ -rf
-            rm /usr/bin/x-ui -f
+            rm /etc/z-ui/ -rf
+            rm /usr/local/z-ui/ -rf
+            rm /usr/bin/z-ui -f
         else
             red "Cancelled. The script exits!"
             exit 1
         fi
     fi
     
-    systemctl stop x-ui >/dev/null 2>&1
+    systemctl stop z-ui >/dev/null 2>&1
     
     install_base
     download_xui $1
     
     cd
-    mkdir /etc/x-ui-english #makidng a directory to import the backup
-    mv /etc/x-ui-english.db.bak /etc/x-ui-english/x-ui-english.db # Importing the backed up db
+    mkdir /etc/z-ui-english #makidng a directory to import the backup
+    mv /etc/z-ui-english.db.bak /etc/z-ui-english/z-ui-english.db # Importing the backed up db
     
     panel_config
     
     systemctl daemon-reload
-    systemctl enable x-ui >/dev/null 2>&1
-    systemctl start x-ui 
-    systemctl restart x-ui
+    systemctl enable z-ui >/dev/null 2>&1
+    systemctl start z-ui 
+    systemctl restart z-ui
     
     cd $cur_dir
     rm -f install.sh
-    green "X-UI v${last_version} Installation / Upgrade is Completed, The Panel has been Started"
+    green "z-ui v${last_version} Installation / Upgrade is Completed, The Panel has been Started"
     echo -e ""
     echo -e "${GREEN} --------------------------------------------------------------------  ${PLAIN}"
     echo -e "${GREEN}   __   __           _    _ _____    ______             _ _     _      ${PLAIN}"
@@ -225,20 +225,20 @@ install_xui() {
     echo -e "${GREEN} --------------------------------------------------------------------- ${PLAIN}"
     echo -e ""
     echo -e "------------------------------------------------------------------------------"
-    echo -e "X-UI MANAGEMENT SCRIPT USAGE: "
+    echo -e "z-ui MANAGEMENT SCRIPT USAGE: "
     echo -e "------------------------------------------------------------------------------"
-    echo -e "x-ui              - Show the management menu"
-    echo -e "x-ui start        - Start X-UI panel"
-    echo -e "x-ui stop         - Stop X-UI panel"
-    echo -e "x-ui restart      - Restart X-UI panel"
-    echo -e "x-ui status       - View X-UI status"
-    echo -e "x-ui enable       - Set X-UI boot self-starting"
-    echo -e "x-ui disable      - Cancel X-UI boot self-starting"
-    echo -e "x-ui log          - View x-ui log"
-    echo -e "x-ui v2-ui        - Migrate V2-UI to X-UI"
-    echo -e "x-ui update       - Update X-UI panel"
-    echo -e "x-ui install      - Install X-UI panel"
-    echo -e "x-ui uninstall    - Uninstall X-UI panel"
+    echo -e "z-ui              - Show the management menu"
+    echo -e "z-ui start        - Start z-ui panel"
+    echo -e "z-ui stop         - Stop z-ui panel"
+    echo -e "z-ui restart      - Restart z-ui panel"
+    echo -e "z-ui status       - View z-ui status"
+    echo -e "z-ui enable       - Set z-ui boot self-starting"
+    echo -e "z-ui disable      - Cancel z-ui boot self-starting"
+    echo -e "z-ui log          - View z-ui log"
+    echo -e "z-ui v2-ui        - Migrate V2-UI to z-ui"
+    echo -e "z-ui update       - Update z-ui panel"
+    echo -e "z-ui install      - Install z-ui panel"
+    echo -e "z-ui uninstall    - Uninstall z-ui panel"
     echo -e "------------------------------------------------------------------------------"
     echo -e "------------------------------------------------------------------------------"
     echo -e "Please do consider supporting authors"
@@ -247,11 +247,11 @@ install_xui() {
     echo -e "taffychan         - https://github.com/taffychan"  
     echo -e "Hossin Asaadi     - https://github.com/hossinasaadi"
     echo -e "Yu FranzKafka     - https://github.com/FranzKafkaYu"
-    echo -e "Niduka Akalanka   - https://github.com/NidukaAkalanka"
+    echo -e "Niduka Akalanka   - https://github.com/ozipoetra"
     echo -e "--------------------------------------------------------------------------------"
     show_login_info
     echo -e ""
-    yellow "(If you cannot access the X-UI panel, first enter the X-UI command in the SSH command line, and then select the 17 option to let go of the firewall port)"
+    yellow "(If you cannot access the z-ui panel, first enter the z-ui command in the SSH command line, and then select the 17 option to let go of the firewall port)"
 }
 
 show_login_info(){

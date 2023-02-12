@@ -74,7 +74,7 @@ confirm() {
 }
 
 confirm_restart() {
-    confirm "Whether to restart the X-UI panel? It will also restart XRAY" "y"
+    confirm "Whether to restart the z-ui panel? It will also restart XRAY" "y"
     if [[ $? == 0 ]]; then
         restart
     else
@@ -88,7 +88,7 @@ before_show_menu() {
 }
 
 install() {
-    bash <(curl -Ls https://raw.githubusercontent.com/NidukaAkalanka/x-ui-english/main/install.sh)
+    bash <(curl -Ls https://raw.githubusercontent.com/ozipoetra/z-ui-english/main/install.sh)
     if [[ $? == 0 ]]; then
         if [[ $# == 0 ]]; then
             start
@@ -99,69 +99,69 @@ install() {
 }
 
 update() {
-    read -rp "This function will update the X-UI panel to the latest version. Data will not be lost. Whether to continues? [Y/N]: " yn
+    read -rp "This function will update the z-ui panel to the latest version. Data will not be lost. Whether to continues? [Y/N]: " yn
     if [[ $yn =~ "Y"|"y" ]]; then
-        systemctl stop x-ui
-        if [[ -e /usr/local/x-ui/ ]]; then
+        systemctl stop z-ui
+        if [[ -e /usr/local/z-ui/ ]]; then
             cd
-            rm -rf /usr/local/x-ui/
+            rm -rf /usr/local/z-ui/
         fi
         
-        last_version=$(curl -Ls "https://api.github.com/repos/NidukaAkalanka/x-ui-english/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || last_version=$(curl -sm8 https://raw.githubusercontent.com/NidukaAkalanka/x-ui-english/main/config/version)
+        last_version=$(curl -Ls "https://api.github.com/repos/ozipoetra/z-ui-english/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || last_version=$(curl -sm8 https://raw.githubusercontent.com/ozipoetra/z-ui-english/main/config/version)
         if [[ -z "$last_version" ]]; then
-            red "Detecting the X-UI version failed, please make sure your server can connect to the GitHub API"
+            red "Detecting the z-ui version failed, please make sure your server can connect to the GitHub API"
             exit 1
         fi
         
-        yellow "The latest version of X-UI is: $ {last_version}, starting update..."
-        wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(archAffix).tar.gz https://github.com/NidukaAkalanka/x-ui-english/releases/download/${last_version}/x-ui-linux-$(archAffix).tar.gz
+        yellow "The latest version of z-ui is: $ {last_version}, starting update..."
+        wget -N --no-check-certificate -O /usr/local/z-ui-linux-$(archAffix).tar.gz https://github.com/ozipoetra/z-ui-english/releases/download/${last_version}/z-ui-linux-$(archAffix).tar.gz
         if [[ $? -ne 0 ]]; then
-            red "Download the X-UI failure, please make sure your server can connect and download the files from github"
+            red "Download the z-ui failure, please make sure your server can connect and download the files from github"
             exit 1
         fi
         
         cd /usr/local/
-        tar zxvf x-ui-linux-$(archAffix).tar.gz
-        rm -f x-ui-linux-$(archAffix).tar.gz
+        tar zxvf z-ui-linux-$(archAffix).tar.gz
+        rm -f z-ui-linux-$(archAffix).tar.gz
         
-        cd x-ui
-        chmod +x x-ui bin/xray-linux-$(archAffix)
-        cp -f x-ui.service /etc/systemd/system/
+        cd z-ui
+        chmod +x z-ui bin/xray-linux-$(archAffix)
+        cp -f z-ui.service /etc/systemd/system/
         
-        wget -N --no-check-certificate https://raw.githubusercontent.com/NidukaAkalanka/x-ui-english/main/x-ui.sh -O /usr/bin/x-ui
-        chmod +x /usr/local/x-ui/x-ui.sh
-        chmod +x /usr/bin/x-ui
+        wget -N --no-check-certificate https://raw.githubusercontent.com/ozipoetra/z-ui-english/main/z-ui.sh -O /usr/bin/z-ui
+        chmod +x /usr/local/z-ui/z-ui.sh
+        chmod +x /usr/bin/z-ui
         
         systemctl daemon-reload
-        systemctl enable x-ui >/dev/null 2>&1
-        systemctl start x-ui
-        systemctl restart x-ui
+        systemctl enable z-ui >/dev/null 2>&1
+        systemctl start z-ui
+        systemctl restart z-ui
         
-        green "The update is completed, and the X-UI panel has been automatically restarted "
+        green "The update is completed, and the z-ui panel has been automatically restarted "
         exit 1
     else
-        red "The upgrade X-UI panel has been canceled!"
+        red "The upgrade z-ui panel has been canceled!"
         exit 1
     fi
 }
 
 uninstall() {
-    confirm "Are you sure to uninstall the X-UI panel, it will uninstall XRAY also?" "n"
+    confirm "Are you sure to uninstall the z-ui panel, it will uninstall XRAY also?" "n"
     if [[ $? != 0 ]]; then
         if [[ $# == 0 ]]; then
             show_menu
         fi
         return 0
     fi
-    systemctl stop x-ui
-    systemctl disable x-ui
-    rm /etc/systemd/system/x-ui.service -f
+    systemctl stop z-ui
+    systemctl disable z-ui
+    rm /etc/systemd/system/z-ui.service -f
     systemctl daemon-reload
     systemctl reset-failed
-    rm /etc/x-ui/ -rf
-    rm /usr/local/x-ui/ -rf
-    rm /usr/bin/x-ui -f
-    green "X-UI panel has been completely uninstalled. Bye Bye!"
+    rm /etc/z-ui/ -rf
+    rm /usr/local/z-ui/ -rf
+    rm /usr/bin/z-ui -f
+    green "z-ui panel has been completely uninstalled. Bye Bye!"
 }
 
 reset_user() {
@@ -176,10 +176,10 @@ reset_user() {
     [[ -z $config_account ]] && config_account=$(date +%s%N | md5sum | cut -c 1-8)
     read -rp "Please set the login password [default is a random password]: " config_password
     [[ -z $config_password ]] && config_password=$(date +%s%N | md5sum | cut -c 1-8)
-    /usr/local/x-ui/x-ui setting -username ${config_account} -password ${config_password} >/dev/null 2>&1
+    /usr/local/z-ui/z-ui setting -username ${config_account} -password ${config_password} >/dev/null 2>&1
     echo -e "Panel login user name has been reset to: ${GREEN} ${config_account} ${PLAIN}"
     echo -e "Panel login password has been reset to: ${GREEN} ${config_password} ${PLAIN}"
-    green "Please use the new login user name and password to access the X-UI panel. Also remember them!"
+    green "Please use the new login user name and password to access the z-ui panel. Also remember them!"
     confirm_restart
 }
 
@@ -191,7 +191,7 @@ reset_config() {
         fi
         return 0
     fi
-    /usr/local/x-ui/x-ui setting -reset >/dev/null 2>&1
+    /usr/local/z-ui/z-ui setting -reset >/dev/null 2>&1
     echo -e "All panel settings have been reset to the default value, please restart the panel and use the web access port $ {Green} 54321 $ {plain} "
     confirm_restart
 }
@@ -208,7 +208,7 @@ set_port() {
                 echo -n -e "Input terminal number[1-65535]: " && read port
             fi
         done
-        /usr/local/x-ui/x-ui setting -port ${port} >/dev/null 2>&1
+        /usr/local/z-ui/z-ui setting -port ${port} >/dev/null 2>&1
         echo -e "After the setting port is complete. Use the newly set port ${${GREEN}} ${port} ${PLAIN} to access the panel"
         confirm_restart
     fi
@@ -218,15 +218,15 @@ start() {
     check_status
     if [[ $? == 0 ]]; then
         echo ""
-        green "The X-UI panel is running, no need to start again, if you need to restart the panel, please use the restart option"
+        green "The z-ui panel is running, no need to start again, if you need to restart the panel, please use the restart option"
     else
-        systemctl start x-ui
+        systemctl start z-ui
         sleep 2
         check_status
         if [[ $? == 0 ]]; then
-            green "X-UI panel is successfully started"
+            green "z-ui panel is successfully started"
         else
-            red "Starting the X-UI panel keep failing, please use X-UI Log to view debug information"
+            red "Starting the z-ui panel keep failing, please use z-ui Log to view debug information"
         fi
     fi
     
@@ -239,15 +239,15 @@ stop() {
     check_status
     if [[ $? == 1 ]]; then
         echo ""
-        green "The X-UI panel has already stopped, no need to stop again"
+        green "The z-ui panel has already stopped, no need to stop again"
     else
-        systemctl stop x-ui
+        systemctl stop z-ui
         sleep 2
         check_status
         if [[ $? == 1 ]]; then
-            green "X-UI and XRAY stopped successfully"
+            green "z-ui and XRAY stopped successfully"
         else
-            red "Stopping the X-UI panel keeps failing, please use X-UI Log to view the debug information"
+            red "Stopping the z-ui panel keeps failing, please use z-ui Log to view the debug information"
         fi
     fi
     
@@ -257,13 +257,13 @@ stop() {
 }
 
 restart() {
-    systemctl restart x-ui
+    systemctl restart z-ui
     sleep 2
     check_status
     if [[ $? == 0 ]]; then
-        green "X-UI and XRAY restarted successfully"
+        green "z-ui and XRAY restarted successfully"
     else
-        red "Restarting the X-UI panel keeps failing, please use X-UI Log to view the debug information"
+        red "Restarting the z-ui panel keeps failing, please use z-ui Log to view the debug information"
     fi
     if [[ $# == 0 ]]; then
         before_show_menu
@@ -271,18 +271,18 @@ restart() {
 }
 
 status() {
-    systemctl status x-ui -l
+    systemctl status z-ui -l
     if [[ $# == 0 ]]; then
         before_show_menu
     fi
 }
 
 enable_xui() {
-    systemctl enable x-ui
+    systemctl enable z-ui
     if [[ $? == 0 ]]; then
-        green "X-UI will be automatically started after upon system startup"
+        green "z-ui will be automatically started after upon system startup"
     else
-        red "Setting automatic start up keeps failing, please use X-UI Log to view the debug information"
+        red "Setting automatic start up keeps failing, please use z-ui Log to view the debug information"
     fi
     
     if [[ $# == 0 ]]; then
@@ -291,11 +291,11 @@ enable_xui() {
 }
 
 disable_xui() {
-    systemctl disable x-ui
+    systemctl disable z-ui
     if [[ $? == 0 ]]; then
-        green "Canceled the automatic start up of X-UI upon system startup"
+        green "Canceled the automatic start up of z-ui upon system startup"
     else
-        red "Cancelling the automatic start up of X-UI keeps failing, please use X-UI Log to view the debug information"
+        red "Cancelling the automatic start up of z-ui keeps failing, please use z-ui Log to view the debug information"
     fi
     
     if [[ $# == 0 ]]; then
@@ -304,14 +304,14 @@ disable_xui() {
 }
 
 show_log() {
-    journalctl -u x-ui.service -e --no-pager -f
+    journalctl -u z-ui.service -e --no-pager -f
     if [[ $# == 0 ]]; then
         before_show_menu
     fi
 }
 
 migrate_v2_ui() {
-    /usr/local/x-ui/x-ui v2-ui
+    /usr/local/z-ui/z-ui v2-ui
     
     before_show_menu
 }
@@ -324,23 +324,23 @@ install_bbr() {
 }
 
 update_shell() {
-    wget -O /usr/bin/x-ui -N --no-check-certificate https://github.com/NidukaAkalanka/x-ui-english/raw/master/x-ui.sh
+    wget -O /usr/bin/z-ui -N --no-check-certificate https://github.com/ozipoetra/z-ui-english/raw/master/z-ui.sh
     if [[ $? != 0 ]]; then
         echo ""
         red "Downloading the script failed, please make sure your server can connect and download the files from github"
         before_show_menu
     else
-        chmod +x /usr/bin/x-ui
+        chmod +x /usr/bin/z-ui
         green "Upgrading the script succeed, please re-run the script" && exit 1
     fi
 }
 
 # 0: running, 1: not running, 2: not installed
 check_status() {
-    if [[ ! -f /etc/systemd/system/x-ui.service ]]; then
+    if [[ ! -f /etc/systemd/system/z-ui.service ]]; then
         return 2
     fi
-    temp=$(systemctl status x-ui | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
+    temp=$(systemctl status z-ui | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
     if [[ x"${temp}" == x"running" ]]; then
         return 0
     else
@@ -349,7 +349,7 @@ check_status() {
 }
 
 check_enabled() {
-    temp=$(systemctl is-enabled x-ui)
+    temp=$(systemctl is-enabled z-ui)
     if [[ x"${temp}" == x"enabled" ]]; then
         return 0
     else
@@ -361,7 +361,7 @@ check_uninstall() {
     check_status
     if [[ $? != 2 ]]; then
         echo ""
-        red "The X-UI panel has been installed, please do not repeat the installation"
+        red "The z-ui panel has been installed, please do not repeat the installation"
         if [[ $# == 0 ]]; then
             before_show_menu
         fi
@@ -375,7 +375,7 @@ check_install() {
     check_status
     if [[ $? == 2 ]]; then
         echo ""
-        red "Please install the X-UI panel first"
+        red "Please install the z-ui panel first"
         if [[ $# == 0 ]]; then
             before_show_menu
         fi
@@ -448,17 +448,17 @@ open_ports(){
 }
 
 update_geo(){
-    systemctl stop x-ui
-    cd /usr/local/x-ui/bin
+    systemctl stop z-ui
+    cd /usr/local/z-ui/bin
     rm -f geoip.dat geosite.dat
     wget -N https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
     wget -N https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
-    systemctl start x-ui
+    systemctl start z-ui
     green "Geosite and Geoip have been updated successfully！"
 }
 
 check_login_info(){
-    yellow "The server and the X-UI panel configurations are being checked, please wait ..."
+    yellow "The server and the z-ui panel configurations are being checked, please wait ..."
     
     WgcfIPv4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     WgcfIPv6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
@@ -472,11 +472,11 @@ check_login_info(){
         v4=$(curl -s4m8 ip.gs -k)
     fi
     
-    config_port=$(/usr/local/x-ui/x-ui 2>&1 | grep tcp | awk '{print $5}' | sed "s/://g")
+    config_port=$(/usr/local/z-ui/z-ui 2>&1 | grep tcp | awk '{print $5}' | sed "s/://g")
 }
 
 show_usage() {
-    green "X-UI English v${last_version} Installation is Completed, The Panel has been Started"
+    green "z-ui English v${last_version} Installation is Completed, The Panel has been Started"
     echo -e ""
     echo -e "${GREEN} --------------------------------------------------------------------- ${PLAIN}"
     echo -e "${GREEN}   __   __           _    _ _____    ______             _ _     _      ${PLAIN}"
@@ -490,20 +490,20 @@ show_usage() {
     echo -e "${GREEN} --------------------------------------------------------------------- ${PLAIN}"
     echo -e ""
     echo -e "------------------------------------------------------------------------------"
-    echo -e "X-UI MANAGEMENT SCRIPT USAGE: "
+    echo -e "z-ui MANAGEMENT SCRIPT USAGE: "
     echo -e "------------------------------------------------------------------------------"
-    echo -e "x-ui              - Show the management menu"
-    echo -e "x-ui start        - Start X-UI panel"
-    echo -e "x-ui stop         - Stop X-UI panel"
-    echo -e "x-ui restart      - Restart X-UI panel"
-    echo -e "x-ui status       - View X-UI status"
-    echo -e "x-ui enable       - Set X-UI boot self-starting"
-    echo -e "x-ui disable      - Cancel X-UI boot self-starting"
-    echo -e "x-ui log          - View x-ui log"
-    echo -e "x-ui v2-ui        - Migrate V2-UI to X-UI"
-    echo -e "x-ui update       - Update X-UI panel"
-    echo -e "x-ui install      - Install X-UI panel"
-    echo -e "x-ui uninstall    - Uninstall X-UI panel"
+    echo -e "z-ui              - Show the management menu"
+    echo -e "z-ui start        - Start z-ui panel"
+    echo -e "z-ui stop         - Stop z-ui panel"
+    echo -e "z-ui restart      - Restart z-ui panel"
+    echo -e "z-ui status       - View z-ui status"
+    echo -e "z-ui enable       - Set z-ui boot self-starting"
+    echo -e "z-ui disable      - Cancel z-ui boot self-starting"
+    echo -e "z-ui log          - View z-ui log"
+    echo -e "z-ui v2-ui        - Migrate V2-UI to z-ui"
+    echo -e "z-ui update       - Update z-ui panel"
+    echo -e "z-ui install      - Install z-ui panel"
+    echo -e "z-ui uninstall    - Uninstall z-ui panel"
     echo -e "------------------------------------------------------------------------------"
     echo -e ""
 }
@@ -520,26 +520,26 @@ show_menu() {
   ${GREEN}                                                  __/ |                 ${PLAIN}
   ${GREEN}                                                 |___/                  ${PLAIN}
 --------------------------------------------------------------------------------
-  ${GREEN}X-UI ENGLISH PANEL MANAGEMENT SCRIPT ${PLAIN}
+  ${GREEN}z-ui ENGLISH PANEL MANAGEMENT SCRIPT ${PLAIN}
 --------------------------------------------------------------------------------
   ${GREEN}0.${PLAIN} Exit Script
 --------------------------------------------------------------------------------
-  ${GREEN}1.${PLAIN} Install X-UI
-  ${GREEN}2.${PLAIN} Update X-UI
-  ${GREEN}3.${PLAIN} Uninstalled X-UI
+  ${GREEN}1.${PLAIN} Install z-ui
+  ${GREEN}2.${PLAIN} Update z-ui
+  ${GREEN}3.${PLAIN} Uninstalled z-ui
 --------------------------------------------------------------------------------
   ${GREEN}4.${PLAIN} Reset Username Password
   ${GREEN}5.${PLAIN} Reset Panel Settings
   ${GREEN}6.${PLAIN} Set the Panel Web Port
 --------------------------------------------------------------------------------
-  ${GREEN}7.${PLAIN} Start X-UI
-  ${GREEN}8.${PLAIN} Stop X-UI
-  ${GREEN}9.${PLAIN} Restart X-UI
- ${GREEN}10.${PLAIN} Check X-UI Status
- ${GREEN}11.${PLAIN} View X-UI Log
+  ${GREEN}7.${PLAIN} Start z-ui
+  ${GREEN}8.${PLAIN} Stop z-ui
+  ${GREEN}9.${PLAIN} Restart z-ui
+ ${GREEN}10.${PLAIN} Check z-ui Status
+ ${GREEN}11.${PLAIN} View z-ui Log
 ---------------------------------------------------------------------------------
- ${GREEN}12.${PLAIN} Set the X-UI auto-start at boot
- ${GREEN}13.${PLAIN} Cancel the X-UI auto-start at boot
+ ${GREEN}12.${PLAIN} Set the z-ui auto-start at boot
+ ${GREEN}13.${PLAIN} Cancel the z-ui auto-start at boot
 ---------------------------------------------------------------------------------
  ${GREEN}14.${PLAIN} Update Geosite and Geoip
  ${GREEN}15.${PLAIN} One-click installation BBR (the latest kernel)
@@ -576,7 +576,7 @@ show_menu() {
         13) check_install && disable_xui ;;
         14) update_geo ;;
         15) install_bbr ;;
-        16) wget -N --no-check-certificate https://raw.githubusercontent.com/NidukaAkalanka/x-ui-english/main/acme.sh && bash acme.sh && before_show_menu ;;
+        16) wget -N --no-check-certificate https://raw.githubusercontent.com/ozipoetra/z-ui-english/main/acme.sh && bash acme.sh && before_show_menu ;;
         17) open_ports ;;
         18) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/warp.sh && bash warp.sh && before_show_menu ;;
         *) red "Please enter the correct option [0-18]" ;;

@@ -1,0 +1,25 @@
+name: Golang Builder
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  releases-matrix:
+    name: Release Go Binary
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
+        goarch: ["386", amd64, arm64]
+        
+    steps:
+    - uses: actions/checkout@v3
+    - uses: wangyoucao577/go-release-action@v1.35
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        goos: linux
+        goarch: ${{ matrix.goarch }}
+        binary_name: "z-ui"
+        asset_name: z-ui-linux-${{ matrix.goarch }}
+        extra_files: LICENSE README.md
