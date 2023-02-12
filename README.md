@@ -7,11 +7,18 @@ kind a fork from [taffychan's x-ui](https://github.com/taffychan/x-ui) + [hossin
 
 ---
 
-<b>Note:</b> I just customize the X-ui service name with z-ui and Xray service name to another, for those who know and needed that 😉. 
+<b>Note:</b> I just customize the X-ui service name with z-ui and Xray service name to another, for those who know and needed that 😉. All credit is belong of them in above.
 
 ---
 
-# Features
+## One Click Install
+Just copy it and paste to your vps
+
+````
+bash <(curl -Ls https://raw.githubusercontent.com/ozipoetra/z-ui/main/install.sh)
+````
+
+### Features
 
 - Everything is in English (Serverside setup + Serverside UI + Web UI)
 - System status monitoring
@@ -29,9 +36,3 @@ kind a fork from [taffychan's x-ui](https://github.com/taffychan/x-ui) + [hossin
 - Can be securely updated from a previous X-UI (CH/EN) version without lossing outbounds
 - For more advanced configuration items, see the panel for details
 
-
-# Single Command Install & upgrade
-
-````
-bash <(curl -Ls https://raw.githubusercontent.com/ozipoetra/z-ui/main/install.sh)
-````
