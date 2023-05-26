@@ -19,7 +19,7 @@
 # Install & Upgrade
 
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/ozipoetra/z-ui/main/install.sh)
 ```
 
 ## Install custom version
@@ -27,7 +27,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.
 To install your desired version you can add the version to the end of install command. Example for ver `v1.6.0`:
 
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh) v1.6.0
+bash <(curl -Ls https://raw.githubusercontent.com/ozipoetra/z-ui/main/install.sh) v1.6.0
 ```
 
 # SSL
