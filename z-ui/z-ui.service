@@ -1,0 +1,17 @@
+[Unit]
+Description=z-ui Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/usr/local/z-ui/
+ExecStart=/usr/local/z-ui/z-ui
+Restart=on-failure
+RestartSec=30s
+RestartPreventExitStatus=23
+LimitNPROC=10000
+LimitNOFILE=1000000
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=z-ui Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/usr/local/z-ui/
+ExecStart=/usr/local/z-ui/z-ui
+
+[Install]
+WantedBy=multi-user.target
