@@ -114,14 +114,14 @@ install_z-ui() {
             exit 1
         fi
         echo -e "Got z-ui latest version: ${last_version}, beginning the installation..."
-        wget -N --no-check-certificate -O /usr/local/z-ui-linux-$(arch3xui).tar.gz https://github.com/ozipoetra/z-ui/releases/download/v1.2/z-ui-linux-$(arch3xui).tar.gz
+        wget -N --no-check-certificate -O /usr/local/z-ui-linux-$(arch3xui).tar.gz https://github.com/ozipoetra/z-ui/releases/download/${last_version}/z-ui-linux-$(arch3xui).tar.gz
         if [[ $? -ne 0 ]]; then
             echo -e "${red}Downloading z-ui failed, please be sure that your server can access Github ${plain}"
             exit 1
         fi
     else
         last_version=$1
-        url="https://github.com/ozipoetra/z-ui/releases/download/v1.2/z-ui-linux-$(arch3xui).tar.gz"
+        url="https://github.com/ozipoetra/z-ui/releases/download/${last_version}/z-ui-linux-$(arch3xui).tar.gz"
         echo -e "Begining to install z-ui $1"
         wget -N --no-check-certificate -O /usr/local/z-ui-linux-$(arch3xui).tar.gz ${url}
         if [[ $? -ne 0 ]]; then
