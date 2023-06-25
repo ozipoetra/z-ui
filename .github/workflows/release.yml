@@ -1,4 +1,4 @@
-name: Release 3X-ui
+name: Release Z-ui
 
 on:
   push:
@@ -27,7 +27,7 @@ jobs:
           sudo apt-get update
           sudo apt install gcc-aarch64-linux-gnu
 
-      - name: Build x-ui
+      - name: Build z-ui
         run: |
           export CGO_ENABLED=1
           export GOOS=linux
@@ -35,15 +35,15 @@ jobs:
           if [ "${{ matrix.platform }}" == "arm64" ]; then
             export CC=aarch64-linux-gnu-gcc
           fi
-          go build -o xui-release -v main.go
+          go build -o zui-release -v main.go
           
-          mkdir x-ui
-          cp xui-release x-ui/
-          cp x-ui.service x-ui/
-          cp x-ui.sh x-ui/
-          mv x-ui/xui-release x-ui/x-ui
-          mkdir x-ui/bin
-          cd x-ui/bin
+          mkdir z-ui
+          cp zui-release z-ui/
+          cp z-ui.service z-ui/
+          cp z-ui.sh z-ui/
+          mv z-ui/zui-release z-ui/z-ui
+          mkdir z-ui/bin
+          cd z-ui/bin
           
           # Download dependencies
           if [ "${{ matrix.platform }}" == "amd64" ]; then
@@ -59,18 +59,18 @@ jobs:
           wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
           wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
           wget https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/iran.dat
-          mv xray xray-${{ matrix.platform }}
+          mv xray ozip-${{ matrix.platform }}
           cd ../..
           
       - name: Package
-        run: tar -zcvf x-ui-${{ matrix.platform }}.tar.gz x-ui
+        run: tar -zcvf z-ui-${{ matrix.platform }}.tar.gz z-ui
         
       - name: Upload
         uses: svenstaro/upload-release-action@2.6.0
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: x-ui-${{ matrix.platform }}.tar.gz
-          asset_name: x-ui-${{ matrix.platform }}.tar.gz
+          file: z-ui-${{ matrix.platform }}.tar.gz
+          asset_name: z-ui-${{ matrix.platform }}.tar.gz
           prerelease: true
           overwrite: true
