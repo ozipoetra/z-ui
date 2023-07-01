@@ -270,6 +270,7 @@ Reference syntax:
 | XUI_DEBUG      |                   `boolean`                    | `false`       |
 | XUI_BIN_FOLDER |                    `string`                    | `"bin"`       |
 | XUI_DB_FOLDER  |                    `string`                    | `"/etc/x-ui"` |
+| XUI_LOG_FOLDER |                    `string`                    | `"/var/log"`  |
 
 Example:
 

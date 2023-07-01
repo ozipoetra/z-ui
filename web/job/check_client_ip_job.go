@@ -54,6 +54,7 @@ func (j *CheckClientIpJob) Run() {
 
 func (j *CheckClientIpJob) processLogFile() {
 	accessLogPath := GetAccessLogPath()
+
 	if accessLogPath == "" {
 		logger.Warning("access.log doesn't exist in your config.json")
 		return
@@ -61,7 +62,7 @@ func (j *CheckClientIpJob) processLogFile() {
 
 	data, err := os.ReadFile(accessLogPath)
 	InboundClientIps := make(map[string][]string)
-	checkError(err)
+	j.checkError(err)
 
 	// clean log
 	if err := os.Truncate(GetAccessLogPath(), 0); err != nil {
@@ -85,19 +86,18 @@ func (j *CheckClientIpJob) processLogFile() {
 			matchesEmail = strings.TrimSpace(strings.Split(matchesEmail, "email: ")[1])
 
 			if !contains(InboundClientIps[matchesEmail], ip) {
+
 				InboundClientIps[matchesEmail] = append(InboundClientIps[matchesEmail], ip)
 			}
 		}
-
 	}
 	j.setAllowedIps([]string{})
 
 	for clientEmail, ips := range InboundClientIps {
-		inboundClientIps, err := GetInboundClientIps(clientEmail)
+		inboundClientIps, err := j.getInboundClientIps(clientEmail)
 		sort.Strings(ips)
 		if err != nil {
-			addInboundClientIps(clientEmail, ips)
-
+			j.addInboundClientIps(clientEmail, ips)
 		} else {
 			j.updateInboundClientIps(inboundClientIps, clientEmail, ips)
 		}
@@ -162,7 +162,7 @@ func GetInboundClientIps(clientEmail string) (*model.InboundClientIps, error) {
 func addInboundClientIps(clientEmail string, ips []string) error {
 	inboundClientIps := &model.InboundClientIps{}
 	jsonIps, err := json.Marshal(ips)
-	checkError(err)
+	j.checkError(err)
 
 	inboundClientIps.ClientEmail = clientEmail
 	inboundClientIps.Ips = string(jsonIps)
@@ -187,8 +187,8 @@ func addInboundClientIps(clientEmail string, ips []string) error {
 func (j *CheckClientIpJob) updateInboundClientIps(inboundClientIps *model.InboundClientIps, clientEmail string, ips []string) error {
 
 	// check inbound limitation
-	inbound, err := GetInboundByEmail(clientEmail)
-	checkError(err)
+	inbound, err := j.getInboundByEmail(clientEmail)
+	j.checkError(err)
 
 	if inbound.Settings == "" {
 		logger.Debug("wrong data ", inbound)
@@ -198,6 +198,15 @@ func (j *CheckClientIpJob) updateInboundClientIps(inboundClientIps *model.Inboun
 	settings := map[string][]model.Client{}
 	json.Unmarshal([]byte(inbound.Settings), &settings)
 	clients := settings["clients"]
+
+	// create iplimit log file channel
+	logIpFile, err := os.OpenFile(xray.GetIPLimitLogPath(), os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+	if err != nil {
+		logger.Errorf("failed to create or open ip limit log file: %s", err)
+	}
+	defer logIpFile.Close()
+	log.SetOutput(logIpFile)
+	log.SetFlags(log.LstdFlags)
 
 	for _, client := range clients {
 		if client.Email == clientEmail {
@@ -244,28 +253,15 @@ func (j *CheckClientIpJob) getAllowedIps() []string {
 	return j.AllowedIps
 }
 
-func DisableInbound(id int) error {
-	db := database.GetDB()
-	result := db.Model(model.Inbound{}).
-		Where("id = ? and enable = ?", id, true).
-		Update("enable", false)
-	err := result.Error
-	logger.Warning("disable inbound with id:", id)
-
-	if err == nil {
-		job.xrayService.SetToNeedRestart()
-	}
-
-	return err
-}
-
-func GetInboundByEmail(clientEmail string) (*model.Inbound, error) {
+func (j *CheckClientIpJob) getInboundByEmail(clientEmail string) (*model.Inbound, error) {
 	db := database.GetDB()
 	var inbounds *model.Inbound
+
 	err := db.Model(model.Inbound{}).Where("settings LIKE ?", "%"+clientEmail+"%").Find(&inbounds).Error
 	if err != nil {
 		return nil, err
 	}
+
 	return inbounds, nil
 }
 
