@@ -13,15 +13,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3.5.3
 
-      - name: Setup Go
-        uses: actions/setup-go@v4.0.1
-        with:
-          go-version: 'stable'
-          
       - name: Build z-ui
         run: |
-          export CGO_ENABLED=1
-          go build .
           mkdir z-ui
           cp zui-release z-ui/
           cp z-ui.service z-ui/
@@ -37,11 +30,11 @@ jobs:
           wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
           wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
           wget https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/iran.dat
-          mv xray ozip-linux-${{ matrix.platform }}
+          mv xray ozip-linux-amd64
           cd ../..
           
       - name: Package
-        run: tar -zcvf z-ui-linux-${{ matrix.platform }}.tar.gz z-ui
+        run: tar -zcvf z-ui-linux-amd64.tar.gz z-ui
         
       - name: Upload
         uses: svenstaro/upload-release-action@2.6.0
