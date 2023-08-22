@@ -37,7 +37,7 @@ jobs:
         run: tar -zcvf z-ui-linux-amd64.tar.gz z-ui
         
       - name: Upload
-        uses: svenstaro/upload-release-action@2.6.0
+        uses: svenstaro/upload-release-action@2.7.0
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
