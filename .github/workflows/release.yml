@@ -21,8 +21,7 @@ jobs:
       - name: Build z-ui
         run: |
           export CGO_ENABLED=1
-          go build . -o zui-release
-          
+          go build .
           mkdir z-ui
           cp zui-release z-ui/
           cp z-ui.service z-ui/
@@ -30,7 +29,6 @@ jobs:
           mv z-ui/zui-release z-ui/z-ui
           mkdir z-ui/bin
           cd z-ui/bin
-          
           # Download dependencies
           wget https://github.com/mhsanaei/Xray-core/releases/latest/download/Xray-linux-64.zip
           unzip Xray-linux-64.zip
