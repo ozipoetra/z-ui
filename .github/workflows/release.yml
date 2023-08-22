@@ -50,7 +50,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: z-ui-linux-${{ matrix.platform }}.tar.gz
-          asset_name: z-ui-linux-${{ matrix.platform }}.tar.gz
+          file: z-ui-linux-amd64.tar.gz
+          asset_name: z-ui-linux-amd64.tar.gz
           prerelease: true
           overwrite: true
