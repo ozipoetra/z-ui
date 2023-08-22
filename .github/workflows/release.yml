@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         platform: [amd64, arm64]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3.5.3
@@ -35,6 +35,8 @@ jobs:
           if [ "${{ matrix.platform }}" == "arm64" ]; then
             export CC=aarch64-linux-gnu-gcc
           fi
+          go get -u all
+          go mod tidy
           go build -o zui-release -v main.go
           
           mkdir z-ui
