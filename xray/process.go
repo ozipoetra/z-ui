@@ -16,7 +16,6 @@ import (
 	"sync"
 	"time"
 	"x-ui/config"
-	"x-ui/logger"
 	"x-ui/util/common"
 
 	"github.com/Workiva/go-datastructures/queue"
@@ -56,46 +55,9 @@ func GetAllowedIPsPath() string {
 	return config.GetBinFolderPath() + "/AllowedIPs"
 }
 
-func GetIPLimitLogPath() string {
-	return config.GetLogFolder() + "/3xipl.log"
-}
-
-func GetIPLimitBannedLogPath() string {
-	return config.GetLogFolder() + "/3xipl-banned.log"
-}
-
-func GetAccessPersistentLogPath() string {
-	return config.GetLogFolder() + "/3xipl-access-persistent.log"
-}
-
-func GetAccessLogPath() string {
-	config, err := os.ReadFile(GetConfigPath())
-	if err != nil {
-		logger.Warningf("Something went wrong: %s", err)
-	}
-
-	jsonConfig := map[string]interface{}{}
-	err = json.Unmarshal([]byte(config), &jsonConfig)
-	if err != nil {
-		logger.Warningf("Something went wrong: %s", err)
-	}
-
-	if jsonConfig["log"] != nil {
-		jsonLog := jsonConfig["log"].(map[string]interface{})
-		if jsonLog["access"] != nil {
-
-			accessLogPath := jsonLog["access"].(string)
-
-			return accessLogPath
-		}
-	}
-	return ""
-}
-
 func stopProcess(p *Process) {
 	p.Stop()
 }
-
 
 type Process struct {
 	*process

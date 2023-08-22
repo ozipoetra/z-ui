@@ -14,7 +14,6 @@ import (
 	"runtime"
 	"strings"
 	"time"
-
 	"x-ui/config"
 	"x-ui/database"
 	"x-ui/logger"
@@ -258,6 +257,7 @@ func (s *ServerService) GetXrayVersions() ([]string, error) {
 }
 
 func (s *ServerService) StopXrayService() (string error) {
+
 	err := s.xrayService.StopXray()
 	if err != nil {
 		logger.Error("stop xray failed:", err)
@@ -268,6 +268,7 @@ func (s *ServerService) StopXrayService() (string error) {
 }
 
 func (s *ServerService) RestartXrayService() (string error) {
+
 	s.xrayService.StopXray()
 	defer func() {
 		err := s.xrayService.RestartXray(true)
@@ -383,6 +384,7 @@ func (s *ServerService) UpdateXray(version string) error {
 	}
 
 	return nil
+
 }
 
 func (s *ServerService) GetLogs(count string) ([]string, error) {

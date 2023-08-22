@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"os"
 	"path"
-
 	"x-ui/config"
 	"x-ui/database/model"
 	"x-ui/xray"
@@ -27,6 +26,7 @@ var initializers = []func() error{
 }
 
 func initUser() error {
+
 	err := db.AutoMigrate(&model.User{})
 	if err != nil {
 		return err
@@ -54,11 +54,9 @@ func initInbound() error {
 func initSetting() error {
 	return db.AutoMigrate(&model.Setting{})
 }
-
 func initInboundClientIps() error {
 	return db.AutoMigrate(&model.InboundClientIps{})
 }
-
 func initClientTraffic() error {
 	return db.AutoMigrate(&xray.ClientTraffic{})
 }
