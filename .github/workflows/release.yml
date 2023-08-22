@@ -29,7 +29,7 @@ jobs:
 
       - name: Build z-ui
         run: |
-          export CGO_ENABLED=1
+          export CGO_ENABLED=0
           export GOOS=linux
           export GOARCH=${{ matrix.platform }}
           if [ "${{ matrix.platform }}" == "arm64" ]; then
