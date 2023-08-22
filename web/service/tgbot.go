@@ -77,13 +77,15 @@ func (t *Tgbot) Start(i18nFS embed.FS) error {
 		return err
 	}
 
-	for _, adminId := range strings.Split(tgBotid, ",") {
-		id, err := strconv.Atoi(adminId)
-		if err != nil {
-			logger.Warning("Failed to get IDs from GetTgBotChatId:", err)
-			return err
+	if tgBotid != "" {
+		for _, adminId := range strings.Split(tgBotid, ",") {
+			id, err := strconv.Atoi(adminId)
+			if err != nil {
+				logger.Warning("Failed to get IDs from GetTgBotChatId:", err)
+				return err
+			}
+			adminIds = append(adminIds, int64(id))
 		}
-		adminIds = append(adminIds, int64(id))
 	}
 
 	bot, err = telego.NewBot(tgBottoken)
@@ -641,6 +643,11 @@ func (t *Tgbot) UserLoginNotify(username string, ip string, time string, status 
 		return
 	}
 
+	loginNotifyEnabled, err := t.settingService.GetTgBotLoginNotify()
+	if err != nil || !loginNotifyEnabled {
+		return
+	}
+
 	msg := ""
 	if status == LoginSuccess {
 		msg += t.I18nBot("tgbot.messages.loginSuccess")
@@ -671,9 +678,9 @@ func (t *Tgbot) getInboundUsages() string {
 			info += t.I18nBot("tgbot.messages.traffic", "Total=="+common.FormatTraffic((inbound.Up+inbound.Down)), "Upload=="+common.FormatTraffic(inbound.Up), "Download=="+common.FormatTraffic(inbound.Down))
 
 			if inbound.ExpiryTime == 0 {
-				info += t.I18nBot("tgbot.messages.expire", "DateTime=="+t.I18nBot("tgbot.unlimited"))
+				info += t.I18nBot("tgbot.messages.expire", "Time=="+t.I18nBot("tgbot.unlimited"))
 			} else {
-				info += t.I18nBot("tgbot.messages.expire", "DateTime=="+time.Unix((inbound.ExpiryTime/1000), 0).Format("2006-01-02 15:04:05"))
+				info += t.I18nBot("tgbot.messages.expire", "Time=="+time.Unix((inbound.ExpiryTime/1000), 0).Format("2006-01-02 15:04:05"))
 			}
 		}
 	}
@@ -820,7 +827,7 @@ func (t *Tgbot) clientTelegramUserInfo(chatId int64, email string, messageID ...
 		t.SendMsgToTgbot(chatId, output, inlineKeyboard)
 		requestUser := telego.KeyboardButtonRequestUser{
 			RequestID: int32(traffic.Id),
-			UserIsBot: false,
+			UserIsBot: new(bool),
 		}
 		keyboard := tu.Keyboard(
 			tu.KeyboardRow(
@@ -940,9 +947,9 @@ func (t *Tgbot) searchInbound(chatId int64, remark string) {
 		info += t.I18nBot("tgbot.messages.traffic", "Total=="+common.FormatTraffic((inbound.Up+inbound.Down)), "Upload=="+common.FormatTraffic(inbound.Up), "Download=="+common.FormatTraffic(inbound.Down))
 
 		if inbound.ExpiryTime == 0 {
-			info += t.I18nBot("tgbot.messages.expire", "DateTime=="+t.I18nBot("tgbot.unlimited"))
+			info += t.I18nBot("tgbot.messages.expire", "Time=="+t.I18nBot("tgbot.unlimited"))
 		} else {
-			info += t.I18nBot("tgbot.messages.expire", "DateTime=="+time.Unix((inbound.ExpiryTime/1000), 0).Format("2006-01-02 15:04:05"))
+			info += t.I18nBot("tgbot.messages.expire", "Time=="+time.Unix((inbound.ExpiryTime/1000), 0).Format("2006-01-02 15:04:05"))
 		}
 		t.SendMsgToTgbot(chatId, info)
 
@@ -1110,9 +1117,9 @@ func (t *Tgbot) getExhausted() string {
 			output += t.I18nBot("tgbot.messages.port", "Port=="+strconv.Itoa(inbound.Port))
 			output += t.I18nBot("tgbot.messages.traffic", "Total=="+common.FormatTraffic((inbound.Up+inbound.Down)), "Upload=="+common.FormatTraffic(inbound.Up), "Download=="+common.FormatTraffic(inbound.Down))
 			if inbound.ExpiryTime == 0 {
-				output += t.I18nBot("tgbot.messages.expire", "DateTime=="+t.I18nBot("tgbot.unlimited"))
+				output += t.I18nBot("tgbot.messages.expire", "Time=="+t.I18nBot("tgbot.unlimited"))
 			} else {
-				output += t.I18nBot("tgbot.messages.expire", "DateTime=="+time.Unix((inbound.ExpiryTime/1000), 0).Format("2006-01-02 15:04:05"))
+				output += t.I18nBot("tgbot.messages.expire", "Time=="+time.Unix((inbound.ExpiryTime/1000), 0).Format("2006-01-02 15:04:05"))
 			}
 			output += "\r\n \r\n"
 		}

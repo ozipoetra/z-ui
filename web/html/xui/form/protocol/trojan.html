@@ -11,7 +11,7 @@
                         </template>
                     </a-tooltip>
                 </span>
-                <a-icon @click="client.email = RandomUtil.randomText()" type="sync"> </a-icon>
+                <a-icon @click="client.email = RandomUtil.randomLowerAndNum(8)" type="sync"> </a-icon>
                 <a-input v-model.trim="client.email" style="width: 200px;"></a-input>
             </a-form-item>
             <a-form-item label="Password">
@@ -28,7 +28,7 @@
                         <a-icon type="question-circle" theme="filled"></a-icon>
                     </a-tooltip>
                 </span>
-                <a-icon @click="client.subId = RandomUtil.randomText()" type="sync"> </a-icon>
+                <a-icon @click="client.subId = RandomUtil.randomLowerAndNum(16)" type="sync"> </a-icon>
                 <a-input v-model.trim="client.subId" style="width: 150px;"></a-input>
             </a-form-item>
             <a-form-item v-if="client.email && app.tgBotEnable">
@@ -102,10 +102,12 @@
         <a-collapse-panel :header="'{{ i18n "pages.client.clientCount"}} : ' + inbound.settings.trojans.length">
             <table width="100%">
                 <tr class="client-table-header">
-                    <th v-for="col in Object.keys(inbound.settings.trojans[0]).slice(0, 3)">[[ col ]]</th>
+                    <th>{{ i18n "pages.inbounds.email" }}</th>
+                    <th>Password</th>
                 </tr>
                 <tr v-for="(client, index) in inbound.settings.trojans" :class="index % 2 == 1 ? 'client-table-odd-row' : ''">
-                    <td v-for="col in Object.values(client).slice(0, 3)">[[ col ]]</td>
+                    <td>[[ client.email ]]</td>
+                    <td>[[ client.password ]]</td>
                 </tr>
             </table>
         </a-collapse-panel>

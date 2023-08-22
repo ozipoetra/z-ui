@@ -39,7 +39,6 @@
 "depleted" = "منقضی"
 "depletingSoon" = "در حال انقضا"
 "domainName" = "آدرس دامنه"
-"additional" = "آی دی جایگزین"
 "monitor" = "آی پی اتصال"
 "certificate" = "گواهی دیجیتال"
 "fail" = "خطا"
@@ -49,6 +48,7 @@
 "clients" = "کاربران"
 "usage" = "استفاده"
 "secretToken" = "توکن امنیتی"
+"remained" = "باقیمانده"
 
 [menu]
 "dashboard" = "وضعیت سیستم"
@@ -72,7 +72,7 @@
 "title" = "وضعیت سیستم"
 "memory" = "حافظه رم"
 "hard" = "حافظه دیسک"
-"xrayStatus" = "وضعیت Xray"
+"xrayStatus" = "وضعیت"
 "stopXray" = "توقف"
 "restartXray" = "شروع مجدد"
 "xraySwitch" = "تغییر ورژن"
@@ -245,6 +245,8 @@
 "telegramNotifyTimeDesc" = "از فرمت زمان بندی لینوکس استفاده کنید "
 "tgNotifyBackup" = "پشتیبان گیری از پایگاه داده"
 "tgNotifyBackupDesc" = "ارسال کپی فایل پایگاه داده به همراه گزارش دوره ای"
+"tgNotifyLogin" = "اعلان ورود"
+"tgNotifyLoginDesc" = "نام کاربری، آدرس ای پی، و زمان وقتی که فردی سعی می‌کند به پنل شما وارد شود نمایش میدهد"
 "sessionMaxAge" = "بیشینه زمان جلسه وب"
 "sessionMaxAgeDesc" = "بیشینه زمانی که میتوانید لاگین بمانید (واحد: دقیقه)"
 "expireTimeDiff" = "آستانه زمان باقی مانده"

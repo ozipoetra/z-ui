@@ -2,58 +2,81 @@ package job
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"regexp"
-	"sync"
-	"x-ui/database"
-	"x-ui/database/model"
-	"x-ui/logger"
-	"x-ui/web/service"
-	"x-ui/xray"
-
-	"net"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/go-cmd/cmd"
+	"x-ui/database"
+	"x-ui/database/model"
+	"x-ui/logger"
+	"x-ui/xray"
 )
 
-type CheckClientIpJob struct {
-	xrayService service.XrayService
-	AllowedIps  []string
-	mutex       sync.Mutex
-}
+type CheckClientIpJob struct {}
 
 var job *CheckClientIpJob
-var AllowedIps []string
-var ipRegx *regexp.Regexp = regexp.MustCompile(`[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+`)
-var emailRegx *regexp.Regexp = regexp.MustCompile(`email:.+`)
+var disAllowedIps []string
+var ipFiles = []string{
+	xray.GetIPLimitLogPath(),
+	xray.GetIPLimitBannedLogPath(),
+	xray.GetAccessPersistentLogPath(),
+}
 
 func NewCheckClientIpJob() *CheckClientIpJob {
-	job := &CheckClientIpJob{}
+	job = new(CheckClientIpJob)
 	return job
 }
 
 func (j *CheckClientIpJob) Run() {
 	logger.Debug("Check Client IP Job...")
-	j.processLogFile()
 
-	// AllowedIps = []string{"192.168.1.183","192.168.1.197"}
-	allowedIps := []byte(strings.Join(j.getAllowedIps(), ","))
-
-	// check if file exists, if not create one
-	_, err := os.Stat(xray.GetAllowedIPsPath())
-	if os.IsNotExist(err) {
-		_, err = os.OpenFile(xray.GetAllowedIPsPath(), os.O_RDWR|os.O_CREATE, 0755)
-		checkError(err)
+	// create files required for iplimit if not exists
+	for i := 0; i < len(ipFiles); i++ {
+		file, err := os.OpenFile(ipFiles[i], os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+		j.checkError(err)
+		defer file.Close()
 	}
-	err = os.WriteFile(xray.GetAllowedIPsPath(), allowedIps, 0755)
-	checkError(err)
+
+	// check for limit ip
+	if j.hasLimitIp() {
+		j.processLogFile()
+	}
+}
+
+func (j *CheckClientIpJob) hasLimitIp() bool {
+	db := database.GetDB()
+	var inbounds []*model.Inbound
+
+	err := db.Model(model.Inbound{}).Find(&inbounds).Error
+	if err != nil {
+		return false
+	}
+
+	for _, inbound := range inbounds {
+		if inbound.Settings == "" {
+			continue
+		}
+
+		settings := map[string][]model.Client{}
+		json.Unmarshal([]byte(inbound.Settings), &settings)
+		clients := settings["clients"]
+
+		for _, client := range clients {
+			limitIp := client.LimitIP
+			if limitIp > 0 {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (j *CheckClientIpJob) processLogFile() {
-	accessLogPath := GetAccessLogPath()
+	accessLogPath := xray.GetAccessLogPath()
 	if accessLogPath == "" {
 		logger.Warning("access.log doesn't exist in your config.json")
 		return
@@ -61,15 +84,12 @@ func (j *CheckClientIpJob) processLogFile() {
 
 	data, err := os.ReadFile(accessLogPath)
 	InboundClientIps := make(map[string][]string)
-	checkError(err)
-
-	// clean log
-	if err := os.Truncate(GetAccessLogPath(), 0); err != nil {
-		checkError(err)
-	}
+	j.checkError(err)
 
 	lines := strings.Split(string(data), "\n")
 	for _, line := range lines {
+		ipRegx, _ := regexp.Compile(`[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+`)
+		emailRegx, _ := regexp.Compile(`email:.+`)
 
 		matchesIp := ipRegx.FindString(line)
 		if len(matchesIp) > 0 {
@@ -84,72 +104,70 @@ func (j *CheckClientIpJob) processLogFile() {
 			}
 			matchesEmail = strings.TrimSpace(strings.Split(matchesEmail, "email: ")[1])
 
-			if !contains(InboundClientIps[matchesEmail], ip) {
+			if InboundClientIps[matchesEmail] != nil {
+				if j.contains(InboundClientIps[matchesEmail], ip) {
+					continue
+				}
+				InboundClientIps[matchesEmail] = append(InboundClientIps[matchesEmail], ip)
+
+			} else {
 				InboundClientIps[matchesEmail] = append(InboundClientIps[matchesEmail], ip)
 			}
 		}
-
 	}
-	j.setAllowedIps([]string{})
+
+	disAllowedIps = []string{}
+	shouldCleanLog := false
 
 	for clientEmail, ips := range InboundClientIps {
-		inboundClientIps, err := GetInboundClientIps(clientEmail)
+		inboundClientIps, err := j.getInboundClientIps(clientEmail)
 		sort.Strings(ips)
 		if err != nil {
-			addInboundClientIps(clientEmail, ips)
-
+			j.addInboundClientIps(clientEmail, ips)
 		} else {
-			j.updateInboundClientIps(inboundClientIps, clientEmail, ips)
+			shouldCleanLog = j.updateInboundClientIps(inboundClientIps, clientEmail, ips)
 		}
 
 	}
 
-	// check if inbound connection is more than limited ip and drop connection
-	LimitDevice := func() { LimitDevice() }
+	// added delay before cleaning logs to reduce chance of logging IP that already has been banned
+	time.Sleep(time.Second * 2)
 
-	stop := schedule(LimitDevice, 1000*time.Millisecond)
-	time.Sleep(10 * time.Second)
-	stop <- true
+	if shouldCleanLog {
+		// copy access log to persistent file
+		logAccessP, err := os.OpenFile(xray.GetAccessPersistentLogPath(), os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+		j.checkError(err)
+		input, err := os.ReadFile(accessLogPath)
+		j.checkError(err)
+		if _, err := logAccessP.Write(input); err != nil {
+			j.checkError(err)
+		}
+		defer logAccessP.Close()
 
-}
-
-func GetAccessLogPath() string {
-
-	config, err := os.ReadFile(xray.GetConfigPath())
-	checkError(err)
-
-	jsonConfig := map[string]interface{}{}
-	err = json.Unmarshal([]byte(config), &jsonConfig)
-	checkError(err)
-	if jsonConfig["log"] != nil {
-		jsonLog := jsonConfig["log"].(map[string]interface{})
-		if jsonLog["access"] != nil {
-
-			accessLogPath := jsonLog["access"].(string)
-
-			return accessLogPath
+		// clean access log
+		if err := os.Truncate(xray.GetAccessLogPath(), 0); err != nil {
+			j.checkError(err)
 		}
 	}
-	return ""
-
 }
 
-func checkError(e error) {
+func (j *CheckClientIpJob) checkError(e error) {
 	if e != nil {
 		logger.Warning("client ip job err:", e)
 	}
 }
 
-func contains(s []string, str string) bool {
+func (j *CheckClientIpJob) contains(s []string, str string) bool {
 	for _, v := range s {
 		if v == str {
 			return true
 		}
 	}
+
 	return false
 }
 
-func GetInboundClientIps(clientEmail string) (*model.InboundClientIps, error) {
+func (j *CheckClientIpJob) getInboundClientIps(clientEmail string) (*model.InboundClientIps, error) {
 	db := database.GetDB()
 	InboundClientIps := &model.InboundClientIps{}
 	err := db.Model(model.InboundClientIps{}).Where("client_email = ?", clientEmail).First(InboundClientIps).Error
@@ -159,10 +177,10 @@ func GetInboundClientIps(clientEmail string) (*model.InboundClientIps, error) {
 	return InboundClientIps, nil
 }
 
-func addInboundClientIps(clientEmail string, ips []string) error {
+func (j *CheckClientIpJob) addInboundClientIps(clientEmail string, ips []string) error {
 	inboundClientIps := &model.InboundClientIps{}
 	jsonIps, err := json.Marshal(ips)
-	checkError(err)
+	j.checkError(err)
 
 	inboundClientIps.ClientEmail = clientEmail
 	inboundClientIps.Ips = string(jsonIps)
@@ -171,10 +189,10 @@ func addInboundClientIps(clientEmail string, ips []string) error {
 	tx := db.Begin()
 
 	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		} else {
+		if err == nil {
 			tx.Commit()
+		} else {
+			tx.Rollback()
 		}
 	}()
 
@@ -184,187 +202,72 @@ func addInboundClientIps(clientEmail string, ips []string) error {
 	}
 	return nil
 }
-func (j *CheckClientIpJob) updateInboundClientIps(inboundClientIps *model.InboundClientIps, clientEmail string, ips []string) error {
+
+func (j *CheckClientIpJob) updateInboundClientIps(inboundClientIps *model.InboundClientIps, clientEmail string, ips []string) bool {
+	jsonIps, err := json.Marshal(ips)
+	j.checkError(err)
+
+	inboundClientIps.ClientEmail = clientEmail
+	inboundClientIps.Ips = string(jsonIps)
 
 	// check inbound limitation
-	inbound, err := GetInboundByEmail(clientEmail)
-	checkError(err)
+	inbound, err := j.getInboundByEmail(clientEmail)
+	j.checkError(err)
 
 	if inbound.Settings == "" {
 		logger.Debug("wrong data ", inbound)
-		return nil
+		return false
 	}
 
 	settings := map[string][]model.Client{}
 	json.Unmarshal([]byte(inbound.Settings), &settings)
 	clients := settings["clients"]
+	shouldCleanLog := false
+
+	// create iplimit log file channel
+	logIpFile, err := os.OpenFile(xray.GetIPLimitLogPath(), os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+	if err != nil {
+		logger.Errorf("failed to create or open ip limit log file: %s", err)
+	}
+	defer logIpFile.Close()
+	log.SetOutput(logIpFile)
+	log.SetFlags(log.LstdFlags)
 
 	for _, client := range clients {
 		if client.Email == clientEmail {
 			limitIp := client.LimitIP
-			if limitIp < len(ips) && limitIp != 0 && inbound.Enable {
-				for _, ip := range ips[:limitIp] {
-					j.addAllowedIp(ip)
+
+			if limitIp != 0 {
+				shouldCleanLog = true
+
+				if limitIp < len(ips) && inbound.Enable {
+					disAllowedIps = append(disAllowedIps, ips[limitIp:]...)
+					for i := limitIp; i < len(ips); i++ {
+						log.Printf("[LIMIT_IP] Email = %s || SRC = %s", clientEmail, ips[i])
+					}
 				}
 			}
 		}
 	}
-
-	jsonIps, err := json.Marshal(ips) // marshal the possibly truncated list of IPs
-	checkError(err)
-
-	inboundClientIps.ClientEmail = clientEmail
-	inboundClientIps.Ips = string(jsonIps)
-
-	logger.Debug("Allowed IPs: ", ips)
+	logger.Debug("disAllowedIps ", disAllowedIps)
+	sort.Strings(disAllowedIps)
 
 	db := database.GetDB()
 	err = db.Save(inboundClientIps).Error
 	if err != nil {
-		return err
+		return shouldCleanLog
 	}
-	return nil
+	return shouldCleanLog
 }
 
-func (j *CheckClientIpJob) setAllowedIps(ips []string) {
-	j.mutex.Lock()
-	defer j.mutex.Unlock()
-	j.AllowedIps = ips
-}
-
-func (j *CheckClientIpJob) addAllowedIp(ip string) {
-	j.mutex.Lock()
-	defer j.mutex.Unlock()
-	j.AllowedIps = append(j.AllowedIps, ip)
-}
-
-func (j *CheckClientIpJob) getAllowedIps() []string {
-	j.mutex.Lock()
-	defer j.mutex.Unlock()
-	return j.AllowedIps
-}
-
-func DisableInbound(id int) error {
-	db := database.GetDB()
-	result := db.Model(model.Inbound{}).
-		Where("id = ? and enable = ?", id, true).
-		Update("enable", false)
-	err := result.Error
-	logger.Warning("disable inbound with id:", id)
-
-	if err == nil {
-		job.xrayService.SetToNeedRestart()
-	}
-
-	return err
-}
-
-func GetInboundByEmail(clientEmail string) (*model.Inbound, error) {
+func (j *CheckClientIpJob) getInboundByEmail(clientEmail string) (*model.Inbound, error) {
 	db := database.GetDB()
 	var inbounds *model.Inbound
+
 	err := db.Model(model.Inbound{}).Where("settings LIKE ?", "%"+clientEmail+"%").Find(&inbounds).Error
 	if err != nil {
 		return nil, err
 	}
+
 	return inbounds, nil
-}
-
-func LimitDevice() {
-
-	localIp, err := LocalIP()
-	checkError(err)
-
-	c := cmd.NewCmd("bash", "-c", "ss --tcp | grep -E '"+IPsToRegex(localIp)+"'| awk '{if($1==\"ESTAB\") print $4,$5;}'", "| sort | uniq -c | sort -nr | head")
-
-	<-c.Start()
-	if len(c.Status().Stdout) > 0 {
-		ipRegx, _ := regexp.Compile(`[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+`)
-		portRegx, _ := regexp.Compile(`(?:(:))([0-9]..[^.][0-9]+)`)
-
-		for _, row := range c.Status().Stdout {
-
-			data := strings.Split(row, " ")
-
-			destIp, destPort, srcIp, srcPort := "", "", "", ""
-
-			destIp = string(ipRegx.FindString(data[0]))
-
-			destPort = portRegx.FindString(data[0])
-			destPort = strings.Replace(destPort, ":", "", -1)
-
-			srcIp = string(ipRegx.FindString(data[1]))
-
-			srcPort = portRegx.FindString(data[1])
-			srcPort = strings.Replace(srcPort, ":", "", -1)
-
-			if contains(AllowedIps, srcIp) {
-				dropCmd := cmd.NewCmd("bash", "-c", "ss -K dport = "+srcPort)
-				dropCmd.Start()
-
-				logger.Debug("request droped : ", srcIp, srcPort, "to", destIp, destPort)
-			}
-		}
-	}
-
-}
-
-func LocalIP() ([]string, error) {
-	// get machine ips
-
-	ifaces, err := net.Interfaces()
-	ips := []string{}
-	if err != nil {
-		return ips, err
-	}
-	for _, i := range ifaces {
-		addrs, err := i.Addrs()
-		if err != nil {
-			return ips, err
-		}
-
-		for _, addr := range addrs {
-			var ip net.IP
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
-
-			ips = append(ips, ip.String())
-
-		}
-	}
-	logger.Debug("System IPs : ", ips)
-
-	return ips, nil
-}
-
-func IPsToRegex(ips []string) string {
-
-	regx := ""
-	for _, ip := range ips {
-		regx += "(" + strings.Replace(ip, ".", "\\.", -1) + ")"
-
-	}
-	regx = "(" + strings.Replace(regx, ")(", ")|(.", -1) + ")"
-
-	return regx
-}
-
-func schedule(LimitDevice func(), delay time.Duration) chan bool {
-	stop := make(chan bool)
-
-	go func() {
-		for {
-			LimitDevice()
-			select {
-			case <-time.After(delay):
-			case <-stop:
-				return
-			}
-		}
-	}()
-
-	return stop
 }

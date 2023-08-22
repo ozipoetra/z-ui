@@ -78,15 +78,15 @@
                 <a-row>
                     <a-col :sm="24" :md="12">
                         <a-card hoverable :class="themeSwitcher.darkCardClass">
-                            3x-ui: <a href="https://github.com/MHSanaei/3x-ui/releases" target="_blank"><a-tag color="green">v{{ .cur_ver }}</a-tag></a>
+                            3X: <a href="https://github.com/MHSanaei/3x-ui/releases" target="_blank"><a-tag color="green">v{{ .cur_ver }}</a-tag></a>
                             Xray: <a-tag color="green" style="cursor: pointer;" @click="openSelectV2rayVersion">v[[ status.xray.version ]]</a-tag>
-                            Telegram: <a href="https://t.me/panel3xui" target="_blank"><a-tag color="green">@panel3xui</a-tag></a>
+                            <a href="https://t.me/panel3xui" target="_blank"><a-tag color="green">@panel3xui</a-tag></a>
                         </a-card>
                     </a-col>
                     <a-col :sm="24" :md="12">
                         <a-card hoverable :class="themeSwitcher.darkCardClass">
                             {{ i18n "menu.link" }}:
-                            <a-tag color="blue" style="cursor: pointer;" @click="openLogs(20)">{{ i18n "pages.index.logs" }}</a-tag>
+                            <a-tag color="blue" style="cursor: pointer;" @click="openLogs()">{{ i18n "pages.index.logs" }}</a-tag>
                             <a-tag color="blue" style="cursor: pointer;" @click="openConfig">{{ i18n "pages.index.config" }}</a-tag>
                             <a-tag color="blue" style="cursor: pointer;" @click="openBackup">{{ i18n "pages.index.backup" }}</a-tag>
                         </a-card>
@@ -253,7 +253,7 @@
             <a-form-item label="Count">
                 <a-select v-model="logModal.rows"
                 style="width: 80px"
-                @change="openLogs(logModal.rows)"
+                @change="openLogs()"
                 :dropdown-class-name="themeSwitcher.darkCardClass">
                     <a-select-option value="10">10</a-select-option>
                     <a-select-option value="20">20</a-select-option>
@@ -261,8 +261,23 @@
                     <a-select-option value="100">100</a-select-option>
                 </a-select>
             </a-form-item>
+            <a-form-item label="Log Level">
+                <a-select v-model="logModal.level"
+                style="width: 120px"
+                @change="openLogs()"
+                :dropdown-class-name="themeSwitcher.darkCardClass">
+                    <a-select-option value="debug">Debug</a-select-option>
+                    <a-select-option value="info">Info</a-select-option>
+                    <a-select-option value="notice">Notice</a-select-option>
+                    <a-select-option value="warning">Warning</a-select-option>
+                    <a-select-option value="err">Error</a-select-option>
+                </a-select>
+            </a-form-item>
+            <a-form-item label="SysLog">
+                <a-checkbox v-model="logModal.syslog" @change="openLogs()"></a-checkbox>
+            </a-form-item>
             <a-form-item>
-                <button class="ant-btn ant-btn-primary" @click="openLogs(logModal.rows)"><a-icon type="sync"></a-icon> Reload</button>
+                <button class="ant-btn ant-btn-primary" @click="openLogs()"><a-icon type="sync"></a-icon> Reload</button>
             </a-form-item>
             <a-form-item>
                 <a-button type="primary" style="margin-bottom: 10px;"
@@ -397,10 +412,11 @@
         visible: false,
         logs: '',
         rows: 20,
-        show(logs, rows) {
+        level: 'info',
+        syslog: false,
+        show(logs) {
             this.visible = true;
-            this.rows = rows;
-            this.logs = logs.join("\n");
+            this.logs = logs? logs.join("\n"): "No Record...";
         },
         hide() {
             this.visible = false;
@@ -449,9 +465,13 @@
                 this.loadingTip = tip;
             },
             async getStatus() {
-                const msg = await HttpUtil.post('/server/status');
-                if (msg.success) {
-                    this.setStatus(msg.obj);
+                try {
+                    const msg = await HttpUtil.post('/server/status');
+                    if (msg.success) {
+                        this.setStatus(msg.obj);
+                    }
+                } catch (e) {
+                    console.error("Failed to get status:", e);
                 }
             },
             setStatus(data) {
@@ -497,14 +517,14 @@
                     return;
                 }
             },
-            async openLogs(rows) {
+            async openLogs(){
                 this.loading(true);
-                const msg = await HttpUtil.post('server/logs/' + rows);
+                const msg = await HttpUtil.post('server/logs/'+logModal.rows,{level: logModal.level, syslog: logModal.syslog});
                 this.loading(false);
                 if (!msg.success) {
                     return;
                 }
-                logModal.show(msg.obj, rows);
+                logModal.show(msg.obj);
             },
             async openConfig() {
                 this.loading(true);
@@ -560,11 +580,14 @@
             },
         },
         async mounted() {
-            while (true) {
+            let retries = 0;
+            while (retries < 5) {
                 try {
                     await this.getStatus();
+                    retries = 0;
                 } catch (e) {
-                    console.error(e);
+                    console.error("Error occurred while fetching status:", e);
+                    retries++;
                 }
                 await PromiseUtil.sleep(2000);
             }

@@ -39,7 +39,6 @@
 "depleted" = "Исчерпано"
 "depletingSoon" = "Почти исчерпано"
 "domainName" = "Домен"
-"additional" = "Дополнительно"
 "monitor" = "Порт IP"
 "certificate" = "Сертификат"
 "fail" = "Неудачно"
@@ -49,6 +48,7 @@
 "clients" = "Клиенты"
 "usage" = "Использование"
 "secretToken" = "Секретный токен"
+"remained" = "остались"
 
 [menu]
 "dashboard" = "Статус системы"
@@ -72,7 +72,7 @@
 "title" = "Статус системы"
 "memory" = "Память"
 "hard" = "Жесткий диск"
-"xrayStatus" = "Статус Xray"
+"xrayStatus" = "Статус"
 "stopXray" = "Остановить Xray"
 "restartXray" = "Рестарт Xray"
 "xraySwitch" = "Переключить версию"
@@ -245,6 +245,8 @@
 "telegramNotifyTimeDesc" = "Используйте формат времени Crontab"
 "tgNotifyBackup" = "Резервное копирование базы данных"
 "tgNotifyBackupDesc" = "Включать файл резервной копии базы данных с уведомлением об отчете"
+"tgNotifyLogin" = "Уведомление о входе"
+"tgNotifyLoginDesc" = "Отображает имя пользователя, IP-адрес и время, когда кто-то пытается войти в вашу панель."
 "sessionMaxAge" = "Продолжительность сессии"
 "sessionMaxAgeDesc" = "Продолжительность сессии в системе (значение: минута)"
 "expireTimeDiff" = "Порог истечения срока сессии для уведомления"

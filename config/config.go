@@ -16,10 +16,11 @@ var name string
 type LogLevel string
 
 const (
-	Debug LogLevel = "debug"
-	Info  LogLevel = "info"
-	Warn  LogLevel = "warn"
-	Error LogLevel = "error"
+	Debug  LogLevel = "debug"
+	Info   LogLevel = "info"
+	Notice LogLevel = "notice"
+	Warn   LogLevel = "warn"
+	Error  LogLevel = "error"
 )
 
 func GetVersion() string {
@@ -63,4 +64,12 @@ func GetDBFolderPath() string {
 
 func GetDBPath() string {
 	return fmt.Sprintf("%s/%s.db", GetDBFolderPath(), GetName())
+}
+
+func GetLogFolder() string {
+	logFolderPath := os.Getenv("XUI_LOG_FOLDER")
+	if logFolderPath == "" {
+		logFolderPath = "/var/log"
+	}
+	return logFolderPath
 }

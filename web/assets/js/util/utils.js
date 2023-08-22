@@ -75,9 +75,7 @@ class PromiseUtil {
     }
 }
 
-const seq = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-
-const shortIdSeq = 'abcdef0123456789'.split('');
+const seq = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 class RandomUtil {
     static randomIntRange(min, max) {
@@ -96,55 +94,31 @@ class RandomUtil {
         return str;
     }
 
-    static randomShortIdSeq(count) {
+    static randomShortId() {
         let str = '';
-        for (let i = 0; i < count; ++i) {
-            str += shortIdSeq[this.randomInt(16)];
+        for (let i = 0; i < 8; ++i) {
+            str += seq[this.randomInt(16)];
         }
         return str;
     }
-    
-    static randomShortId() {
-        return this.randomShortIdSeq(8);
-    }
 
-    static randomLowerAndNum(count) {
+    static randomLowerAndNum(len) {
         let str = '';
-        for (let i = 0; i < count; ++i) {
+        for (let i = 0; i < len; ++i) {
             str += seq[this.randomInt(36)];
         }
         return str;
     }
 
-    static randomMTSecret() {
-        let str = '';
-        for (let i = 0; i < 32; ++i) {
-            let index = this.randomInt(16);
-            if (index <= 9) {
-                str += index;
-            } else {
-                str += seq[index - 10];
-            }
-        }
-        return str;
-    }
-
     static randomUUID() {
-        let d = new Date().getTime();
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-            let r = (d + Math.random() * 16) % 16 | 0;
-            d = Math.floor(d / 16);
-            return (c === 'x' ? r : (r & 0x7 | 0x8)).toString(16);
+        const template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+        return template.replace(/[xy]/g, function (c) {
+          const randomValues = new Uint8Array(1);
+          crypto.getRandomValues(randomValues);
+          let randomValue = randomValues[0] % 16;
+          let calculatedValue = (c === 'x') ? randomValue : (randomValue & 0x3 | 0x8);
+          return calculatedValue.toString(16);
         });
-    }
-
-    static randomText() {
-        var chars = 'abcdefghijklmnopqrstuvwxyz1234567890';
-        var string = '';
-        for (var ii = 0; ii < 8; ii++) {
-            string += chars[Math.floor(Math.random() * chars.length)];
-        }
-        return string;
     }
 
     static randomShadowsocksPassword() {

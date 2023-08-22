@@ -39,7 +39,6 @@
 "depleted" = "耗尽"
 "depletingSoon" = "即将耗尽"
 "domainName" = "域名"
-"additional" = "额外"
 "monitor" = "监听"
 "certificate" = "证书"
 "fail" = "失败"
@@ -49,6 +48,7 @@
 "clients" = "客户端"
 "usage" = "用法"
 "secretToken" = "秘密令牌"
+"remained" = "仍然存在"
 
 [menu]
 "dashboard" = "系统状态"
@@ -72,7 +72,7 @@
 "title" = "系统状态"
 "memory" = "内存"
 "hard" = "硬盘"
-"xrayStatus" = "xray 状态"
+"xrayStatus" = "状态"
 "stopXray" = "停止"
 "restartXray" = "重启"
 "xraySwitch" = "切换版本"
@@ -245,6 +245,8 @@
 "telegramNotifyTimeDesc" = "采用Crontab定时格式,重启面板生效"
 "tgNotifyBackup" = "数据库备份"
 "tgNotifyBackupDesc" = "正在发送数据库备份文件和报告通知"
+"tgNotifyLogin" = "登录通知"
+"tgNotifyLoginDesc" = "当有人试图登录您的面板时显示用户名、IP 地址和时间"
 "sessionMaxAge" = "会话最大年龄"
 "sessionMaxAgeDesc" = "您可以保持登录状态的时间（单位：分钟）"
 "expireTimeDiff" = "耗尽时间阈值"

@@ -1,5 +1,6 @@
 {{define "form/shadowsocks"}}
 <a-form layout="inline" style="padding: 10px 0px;">
+    <template v-if="inbound.isSSMultiUser">
     <a-collapse activeKey="0" v-for="(client, index) in inbound.settings.shadowsockses.slice(0,1)" v-if="!isEdit">
         <a-collapse-panel header='{{ i18n "pages.inbounds.client" }}'>
             <a-form-item>
@@ -11,7 +12,7 @@
                         </template>
                     </a-tooltip>
                 </span>
-                <a-icon @click="client.email = RandomUtil.randomText()" type="sync"> </a-icon>
+                <a-icon @click="client.email = RandomUtil.randomLowerAndNum(8)" type="sync"> </a-icon>
                 <a-input v-model.trim="client.email" style="width: 200px;"></a-input>
             </a-form-item>
             <a-form-item label="Password">
@@ -28,7 +29,7 @@
                         <a-icon type="question-circle" theme="filled"></a-icon>
                     </a-tooltip>
                 </span>
-                <a-icon @click="client.subId = RandomUtil.randomText()" type="sync"> </a-icon>
+                <a-icon @click="client.subId = RandomUtil.randomLowerAndNum(16)" type="sync"> </a-icon>
                 <a-input v-model.trim="client.subId" style="width: 150px;"></a-input>
             </a-form-item>
             <a-form-item v-if="client.email && app.tgBotEnable">
@@ -96,22 +97,26 @@
         <a-collapse-panel :header="'{{ i18n "pages.client.clientCount"}} : ' + inbound.settings.shadowsockses.length">
             <table width="100%">
                 <tr class="client-table-header">
-                    <th v-for="col in Object.keys(inbound.settings.shadowsockses[0]).slice(0, 3)">[[ col ]]</th>
+                    <th>{{ i18n "pages.inbounds.email" }}</th>
+                    <th>Password</th>
                 </tr>
                 <tr v-for="(client, index) in inbound.settings.shadowsockses" :class="index % 2 == 1 ? 'client-table-odd-row' : ''">
-                    <td v-for="col in Object.values(client).slice(0, 3)">[[ col ]]</td>
+                    <td>[[ client.email ]]</td>
+                    <td>[[ client.password ]]</td>
                 </tr>
             </table>
         </a-collapse-panel>
     </a-collapse>
+</template>
 </a-form>
 <a-form layout="inline">
     <a-form-item label='{{ i18n "encryption" }}'>
-        <a-select v-model="inbound.settings.method" style="width: 250px;" :dropdown-class-name="themeSwitcher.darkCardClass">
+        <a-select v-model="inbound.settings.method" style="width: 250px;" :dropdown-class-name="themeSwitcher.darkCardClass" @change="SSMethodChange">
             <a-select-option v-for="method in SSMethods" :value="method">[[ method ]]</a-select-option>
         </a-select>
     </a-form-item>
-    <a-form-item label='{{ i18n "password" }}'>
+    <a-form-item v-if="inbound.isSS2022" label='{{ i18n "password" }}'>
+        <a-icon @click="inbound.settings.password = RandomUtil.randomShadowsocksPassword()" type="sync"> </a-icon>
         <a-input v-model.trim="inbound.settings.password" style="width: 250px;"></a-input>
     </a-form-item>
     <a-form-item label='{{ i18n "pages.inbounds.network" }}'>

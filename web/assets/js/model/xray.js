@@ -4,7 +4,6 @@ const Protocols = {
     TROJAN: 'trojan',
     SHADOWSOCKS: 'shadowsocks',
     DOKODEMO: 'dokodemo-door',
-    MTPROTO: 'mtproto',
     SOCKS: 'socks',
     HTTP: 'http',
 };
@@ -17,8 +16,13 @@ const VmessMethods = {
 };
 
 const SSMethods = {
-	BLAKE3_AES_128_GCM: '2022-blake3-aes-128-gcm',
-	BLAKE3_AES_256_GCM: '2022-blake3-aes-256-gcm',
+    AES_256_GCM: 'aes-256-gcm',
+    AES_128_GCM: 'aes-128-gcm',
+    CHACHA20_POLY1305: 'chacha20-poly1305',
+    XCHACHA20_POLY1305: 'xchacha20-poly1305',
+    BLAKE3_AES_128_GCM: '2022-blake3-aes-128-gcm',
+    BLAKE3_AES_256_GCM: '2022-blake3-aes-256-gcm',
+    BLAKE3_CHACHA20_POLY1305: '2022-blake3-chacha20-poly1305',
 };
 
 const XTLS_FLOW_CONTROL = {
@@ -81,6 +85,7 @@ const SNIFFING_OPTION = {
     HTTP:    "http",
     TLS:     "tls",
     QUIC:    "quic",
+    FAKEDNS: "fakedns"
 };
 
 Object.freeze(Protocols);
@@ -379,7 +384,10 @@ class WsStreamSettings extends XrayCommonClass {
 }
 
 class HttpStreamSettings extends XrayCommonClass {
-    constructor(path='/', host=['']) {
+    constructor(
+        path='/',
+        host=[''],
+        ) {
         super();
         this.path = path;
         this.host = host.length === 0 ? [''] : host;
@@ -411,9 +419,10 @@ class HttpStreamSettings extends XrayCommonClass {
     }
 }
 
+
 class QuicStreamSettings extends XrayCommonClass {
     constructor(security=VmessMethods.NONE,
-                key='', type='none') {
+                key=RandomUtil.randomSeq(10), type='none') {
         super();
         this.security = security;
         this.key = key;
@@ -442,7 +451,7 @@ class QuicStreamSettings extends XrayCommonClass {
 class GrpcStreamSettings extends XrayCommonClass {
     constructor(
         serviceName="",
-        multiMode=false
+        multiMode=false,
         ) {
         super();
         this.serviceName = serviceName;
@@ -459,16 +468,18 @@ class GrpcStreamSettings extends XrayCommonClass {
     toJson() {
         return {
             serviceName: this.serviceName,
-            multiMode: this.multiMode
+            multiMode: this.multiMode,
         }
     }
 }
+
 
 class TlsStreamSettings extends XrayCommonClass {
     constructor(serverName='',
                 minVersion = TLS_VERSION_OPTION.TLS12,
                 maxVersion = TLS_VERSION_OPTION.TLS13,
                 cipherSuites = '',
+                rejectUnknownSni = false,
                 certificates=[new TlsStreamSettings.Cert()],
                 alpn=[ALPN_OPTION.H2,ALPN_OPTION.HTTP1],
                 settings=new TlsStreamSettings.Settings()) {
@@ -477,6 +488,7 @@ class TlsStreamSettings extends XrayCommonClass {
         this.minVersion = minVersion;
         this.maxVersion = maxVersion;
         this.cipherSuites = cipherSuites;
+        this.rejectUnknownSni = rejectUnknownSni;
         this.certs = certificates;
         this.alpn = alpn;
         this.settings = settings;
@@ -498,12 +510,14 @@ class TlsStreamSettings extends XrayCommonClass {
         }
 
 		if (!ObjectUtil.isEmpty(json.settings)) {
-            settings = new TlsStreamSettings.Settings(json.settings.allowInsecure , json.settings.fingerprint, json.settings.serverName, json.settings.domains);        }
+            settings = new TlsStreamSettings.Settings(json.settings.allowInsecure , json.settings.fingerprint, json.settings.serverName, json.settings.domains);
+        }
         return new TlsStreamSettings(
             json.serverName,
             json.minVersion,
             json.maxVersion,
             json.cipherSuites,
+            json.rejectUnknownSni,
             certs,
             json.alpn,
             settings,
@@ -516,6 +530,7 @@ class TlsStreamSettings extends XrayCommonClass {
             minVersion: this.minVersion,
             maxVersion: this.maxVersion,
             cipherSuites: this.cipherSuites,
+            rejectUnknownSni: this.rejectUnknownSni,
             certificates: TlsStreamSettings.toJsonArray(this.certs),
             alpn: this.alpn,
             settings: this.settings,
@@ -785,6 +800,27 @@ RealityStreamSettings.Settings = class extends XrayCommonClass {
     }
 };
 
+class SockoptStreamSettings extends XrayCommonClass {
+    constructor(
+        acceptProxyProtocol = false,
+    ) {
+        super();
+        this.acceptProxyProtocol = acceptProxyProtocol;
+    }
+
+    static fromJson(json = {}) {
+        return new SockoptStreamSettings(
+            json.acceptProxyProtocol,
+        );
+    }
+
+    toJson() {
+        return {
+            acceptProxyProtocol: this.acceptProxyProtocol,
+        };
+    }
+}
+
 class StreamSettings extends XrayCommonClass {
     constructor(network='tcp',
         security='none',
@@ -797,6 +833,7 @@ class StreamSettings extends XrayCommonClass {
         httpSettings=new HttpStreamSettings(),
         quicSettings=new QuicStreamSettings(),
         grpcSettings=new GrpcStreamSettings(),
+        sockopt = new SockoptStreamSettings(),
         ) {
         super();
         this.network = network;
@@ -810,6 +847,7 @@ class StreamSettings extends XrayCommonClass {
         this.http = httpSettings;
         this.quic = quicSettings;
         this.grpc = grpcSettings;
+        this.sockopt = sockopt;
     }
 
     get isTls() {
@@ -849,6 +887,16 @@ class StreamSettings extends XrayCommonClass {
         }
     }
 
+    get isSockopt() {
+        return ['http', 'grpc'].indexOf(this.network) !== -1;
+    }
+
+    set isSockopt(isSockopt) {
+        if (isSockopt) {
+            return ['http', 'grpc'].indexOf(this.network) !== -1;
+        }
+    }
+
     static fromJson(json={}) {
 
         return new StreamSettings(
@@ -863,6 +911,7 @@ class StreamSettings extends XrayCommonClass {
             HttpStreamSettings.fromJson(json.httpSettings),
             QuicStreamSettings.fromJson(json.quicSettings),
             GrpcStreamSettings.fromJson(json.grpcSettings),
+            SockoptStreamSettings.fromJson(json.sockopt),
         );
     }
 
@@ -880,12 +929,13 @@ class StreamSettings extends XrayCommonClass {
             httpSettings: network === 'http' ? this.http.toJson() : undefined,
             quicSettings: network === 'quic' ? this.quic.toJson() : undefined,
             grpcSettings: network === 'grpc' ? this.grpc.toJson() : undefined,
+            sockopt: this.isSockopt ? this.sockopt.toJson() : undefined,
         };
     }
 }
 
 class Sniffing extends XrayCommonClass {
-    constructor(enabled=true, destOverride=['http', 'tls', 'quic']) {
+    constructor(enabled=true, destOverride=['http', 'tls', 'quic', 'fakedns']) {
         super();
         this.enabled = enabled;
         this.destOverride = destOverride;
@@ -895,7 +945,7 @@ class Sniffing extends XrayCommonClass {
         let destOverride = ObjectUtil.clone(json.destOverride);
         if (!ObjectUtil.isEmpty(destOverride) && !ObjectUtil.isArrEmpty(destOverride)) {
             if (ObjectUtil.isEmpty(destOverride[0])) {
-                destOverride = ['http', 'tls', 'quic'];
+                destOverride = ['http', 'tls', 'quic', 'fakedns'];
             }
         }
         return new Sniffing(
@@ -965,7 +1015,6 @@ class Inbound extends XrayCommonClass {
         }
     }
 
-    //for Reality
     get reality() {
         return this.stream.security === 'reality';
     }
@@ -1018,6 +1067,12 @@ class Inbound extends XrayCommonClass {
             default:
                 return "";
         }
+    }
+    get isSSMultiUser() {
+        return this.method != SSMethods.BLAKE3_CHACHA20_POLY1305;
+    }
+    get isSS2022(){
+        return this.method.substring(0,4) === "2022";
     }
 
     get serverName() {
@@ -1088,7 +1143,7 @@ class Inbound extends XrayCommonClass {
                     return this.settings.trojans[index].expiryTime < new Date().getTime();
                 return false
             case Protocols.SHADOWSOCKS:
-                if(this.settings.shadowsockses[index].expiryTime > 0)
+                if(this.settings.shadowsockses.length > 0 && this.settings.shadowsockses[index].expiryTime > 0)
                     return this.settings.shadowsockses[index].expiryTime < new Date().getTime();
                 return false
             default:
@@ -1169,6 +1224,7 @@ class Inbound extends XrayCommonClass {
             case Protocols.VMESS:
             case Protocols.VLESS:
             case Protocols.TROJAN:
+            case Protocols.SHADOWSOCKS:
                 return true;
             default:
                 return false;
@@ -1207,7 +1263,6 @@ class Inbound extends XrayCommonClass {
             add: address,
             port: this.port,
             id: this.settings.vmesses[clientIndex].id,
-            aid: this.settings.vmesses[clientIndex].alterId,
             net: this.stream.network,
             type: 'none',
             tls: this.stream.security,
@@ -1344,7 +1399,7 @@ class Inbound extends XrayCommonClass {
             }
         }
 
-        if (this.xtls) {
+        else if (this.xtls) {
             params.set("security", "xtls");
             params.set("alpn", this.stream.xtls.alpn);
             if(this.stream.xtls.settings.allowInsecure){
@@ -1359,7 +1414,7 @@ class Inbound extends XrayCommonClass {
             params.set("flow", this.settings.vlesses[clientIndex].flow);
         }
 
-        if (this.reality) {
+        else if (this.reality) {
             params.set("security", "reality");
             params.set("fp", this.stream.reality.settings.fingerprint);
             params.set("pbk", this.stream.reality.settings.publicKey);
@@ -1380,6 +1435,10 @@ class Inbound extends XrayCommonClass {
             }
         }
 
+        else {
+            params.set("security", "none");
+        }
+
         const link = `vless://${uuid}@${address}:${port}`;
         const url = new URL(link);
         for (const [key, value] of params) {
@@ -1392,8 +1451,68 @@ class Inbound extends XrayCommonClass {
     genSSLink(address='', remark='', clientIndex = 0) {
         let settings = this.settings;
         const port = this.port;
+        const type = this.stream.network;
+        const params = new Map();
+        params.set("type", this.stream.network);
+        switch (type) {
+            case "tcp":
+                const tcp = this.stream.tcp;
+                if (tcp.type === 'http') {
+                    const request = tcp.request;
+                    params.set("path", request.path.join(','));
+                    const index = request.headers.findIndex(header => header.name.toLowerCase() === 'host');
+                    if (index >= 0) {
+                        const host = request.headers[index].value;
+                        params.set("host", host);
+                    }
+                    params.set("headerType", 'http');
+                }
+                break;
+            case "kcp":
+                const kcp = this.stream.kcp;
+                params.set("headerType", kcp.type);
+                params.set("seed", kcp.seed);
+                break;
+            case "ws":
+                const ws = this.stream.ws;
+                params.set("path", ws.path);
+                const index = ws.headers.findIndex(header => header.name.toLowerCase() === 'host');
+                if (index >= 0) {
+                    const host = ws.headers[index].value;
+                    params.set("host", host);
+                }
+                break;
+            case "http":
+                const http = this.stream.http;
+                params.set("path", http.path);
+                params.set("host", http.host);
+                break;
+            case "quic":
+                const quic = this.stream.quic;
+                params.set("quicSecurity", quic.security);
+                params.set("key", quic.key);
+                params.set("headerType", quic.type);
+                break;
+            case "grpc":
+                const grpc = this.stream.grpc;
+                params.set("serviceName", grpc.serviceName);
+                if(grpc.multiMode){
+                    params.set("mode", "multi");
+                }
+                break;
+        }
 
-        return 'ss://' + safeBase64(settings.method + ':' + settings.password + ':' +settings.shadowsockses[clientIndex].password) + '@' + address + ':' + this.port + '#' + encodeURIComponent(remark);
+        let password = new Array();
+        if (this.isSSMultiUser) password.push(settings.shadowsockses[clientIndex].password);
+        if (this.isSS2022) password.push(settings.password);
+
+        let link = `ss://${safeBase64(settings.method + ':' + password.join(':'))}@${address}:${this.port}`;
+        const url = new URL(link);
+        for (const [key, value] of params) {
+            url.searchParams.set(key, value)
+        }
+        url.hash = encodeURIComponent(remark);
+        return url.toString();
     }
 
     genTrojanLink(address = '', remark = '', clientIndex = 0) {
@@ -1465,7 +1584,7 @@ class Inbound extends XrayCommonClass {
 			}
         }
 
-        if (this.reality) {
+        else if (this.reality) {
             params.set("security", "reality");
             params.set("fp", this.stream.reality.settings.fingerprint);
             params.set("pbk", this.stream.reality.settings.publicKey);
@@ -1483,7 +1602,7 @@ class Inbound extends XrayCommonClass {
             }
         }
 
-		if (this.xtls) {
+		else if (this.xtls) {
             params.set("security", "xtls");
             params.set("alpn", this.stream.xtls.alpn);
             if(this.stream.xtls.settings.allowInsecure){
@@ -1496,6 +1615,10 @@ class Inbound extends XrayCommonClass {
                 params.set("sni", this.stream.xtls.settings.serverName);
 			}
             params.set("flow", this.settings.trojans[clientIndex].flow);
+        }
+
+        else {
+            params.set("security", "none");
         }
 
         const link = `trojan://${settings.trojans[clientIndex].password}@${address}:${this.port}`;
@@ -1586,7 +1709,6 @@ Inbound.Settings = class extends XrayCommonClass {
             case Protocols.TROJAN: return new Inbound.TrojanSettings(protocol);
             case Protocols.SHADOWSOCKS: return new Inbound.ShadowsocksSettings(protocol);
             case Protocols.DOKODEMO: return new Inbound.DokodemoSettings(protocol);
-            case Protocols.MTPROTO: return new Inbound.MtprotoSettings(protocol);
             case Protocols.SOCKS: return new Inbound.SocksSettings(protocol);
             case Protocols.HTTP: return new Inbound.HttpSettings(protocol);
             default: return null;
@@ -1600,7 +1722,6 @@ Inbound.Settings = class extends XrayCommonClass {
             case Protocols.TROJAN: return Inbound.TrojanSettings.fromJson(json);
             case Protocols.SHADOWSOCKS: return Inbound.ShadowsocksSettings.fromJson(json);
             case Protocols.DOKODEMO: return Inbound.DokodemoSettings.fromJson(json);
-            case Protocols.MTPROTO: return Inbound.MtprotoSettings.fromJson(json);
             case Protocols.SOCKS: return Inbound.SocksSettings.fromJson(json);
             case Protocols.HTTP: return Inbound.HttpSettings.fromJson(json);
             default: return null;
@@ -1655,10 +1776,9 @@ Inbound.VmessSettings = class extends Inbound.Settings {
     }
 };
 Inbound.VmessSettings.Vmess = class extends XrayCommonClass {
-    constructor(id=RandomUtil.randomUUID(), alterId=0, email=RandomUtil.randomText(),limitIp=0, totalGB=0, expiryTime=0, enable=true, tgId='', subId='') {
+    constructor(id=RandomUtil.randomUUID(), email=RandomUtil.randomLowerAndNum(8),limitIp=0, totalGB=0, expiryTime=0, enable=true, tgId='', subId=RandomUtil.randomLowerAndNum(16)) {
         super();
         this.id = id;
-        this.alterId = alterId;
         this.email = email;
         this.limitIp = limitIp;
         this.totalGB = totalGB;
@@ -1671,7 +1791,6 @@ Inbound.VmessSettings.Vmess = class extends XrayCommonClass {
     static fromJson(json={}) {
         return new Inbound.VmessSettings.Vmess(
             json.id,
-            json.alterId,
             json.email,
             json.limitIp,
             json.totalGB,
@@ -1747,7 +1866,7 @@ Inbound.VLESSSettings = class extends Inbound.Settings {
 
 };
 Inbound.VLESSSettings.VLESS = class extends XrayCommonClass {
-    constructor(id=RandomUtil.randomUUID(), flow='', email=RandomUtil.randomText(),limitIp=0, totalGB=0, expiryTime=0, enable=true, tgId='', subId='') {
+    constructor(id=RandomUtil.randomUUID(), flow='', email=RandomUtil.randomLowerAndNum(8),limitIp=0, totalGB=0, expiryTime=0, enable=true, tgId='', subId=RandomUtil.randomLowerAndNum(16)) {
         super();
         this.id = id;
         this.flow = flow;
@@ -1870,7 +1989,7 @@ Inbound.TrojanSettings = class extends Inbound.Settings {
     }
 };
 Inbound.TrojanSettings.Trojan = class extends XrayCommonClass {
-    constructor(password=RandomUtil.randomSeq(10), flow='', email=RandomUtil.randomText(),limitIp=0, totalGB=0, expiryTime=0, enable=true, tgId='', subId='') {
+    constructor(password=RandomUtil.randomSeq(10), flow='', email=RandomUtil.randomLowerAndNum(8),limitIp=0, totalGB=0, expiryTime=0, enable=true, tgId='', subId=RandomUtil.randomLowerAndNum(16)) {
         super();
         this.password = password;
         this.flow = flow;
@@ -2012,8 +2131,9 @@ Inbound.ShadowsocksSettings = class extends Inbound.Settings {
 };
 
 Inbound.ShadowsocksSettings.Shadowsocks = class extends XrayCommonClass {
-    constructor(password=RandomUtil.randomShadowsocksPassword(), email=RandomUtil.randomText(),limitIp=0, totalGB=0, expiryTime=0, enable=true, tgId='', subId='') {
+    constructor(method='', password=RandomUtil.randomShadowsocksPassword(), email=RandomUtil.randomLowerAndNum(8),limitIp=0, totalGB=0, expiryTime=0, enable=true, tgId='', subId=RandomUtil.randomLowerAndNum(16)) {
         super();
+        this.method = method;
         this.password = password;
         this.email = email;
         this.limitIp = limitIp;
@@ -2026,6 +2146,7 @@ Inbound.ShadowsocksSettings.Shadowsocks = class extends XrayCommonClass {
 
     toJson() {
         return {
+            method: this.method,
             password: this.password,
             email: this.email,
             limitIp: this.limitIp,
@@ -2039,6 +2160,7 @@ Inbound.ShadowsocksSettings.Shadowsocks = class extends XrayCommonClass {
 
     static fromJson(json = {}) {
         return new Inbound.ShadowsocksSettings.Shadowsocks(
+            json.method,
             json.password,
             json.email,
             json.limitIp,
@@ -2103,36 +2225,6 @@ Inbound.DokodemoSettings = class extends Inbound.Settings {
             network: this.network,
             followRedirect: this.followRedirect,
         };
-    }
-};
-
-Inbound.MtprotoSettings = class extends Inbound.Settings {
-    constructor(protocol, users=[new Inbound.MtprotoSettings.MtUser()]) {
-        super(protocol);
-        this.users = users;
-    }
-
-    static fromJson(json={}) {
-        return new Inbound.MtprotoSettings(
-            Protocols.MTPROTO,
-            json.users.map(user => Inbound.MtprotoSettings.MtUser.fromJson(user)),
-        );
-    }
-
-    toJson() {
-        return {
-            users: XrayCommonClass.toJsonArray(this.users),
-        };
-    }
-};
-Inbound.MtprotoSettings.MtUser = class extends XrayCommonClass {
-    constructor(secret=RandomUtil.randomMTSecret()) {
-        super();
-        this.secret = secret;
-    }
-
-    static fromJson(json={}) {
-        return new Inbound.MtprotoSettings.MtUser(json.secret);
     }
 };
 

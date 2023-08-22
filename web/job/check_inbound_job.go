@@ -15,19 +15,23 @@ func NewCheckInboundJob() *CheckInboundJob {
 }
 
 func (j *CheckInboundJob) Run() {
-	count, err := j.inboundService.DisableInvalidClients()
+	needRestart, count, err := j.inboundService.DisableInvalidClients()
 	if err != nil {
-		logger.Warning("disable invalid Client err:", err)
+		logger.Warning("Error in disabling invalid clients:", err)
 	} else if count > 0 {
-		logger.Debugf("disabled %v Client", count)
-		j.xrayService.SetToNeedRestart()
+		logger.Debugf("%v clients disabled", count)
+		if needRestart {
+			j.xrayService.SetToNeedRestart()
+		}
 	}
 
-	count, err = j.inboundService.DisableInvalidInbounds()
+	needRestart, count, err = j.inboundService.DisableInvalidInbounds()
 	if err != nil {
-		logger.Warning("disable invalid inbounds err:", err)
+		logger.Warning("Error in disabling invalid inbounds:", err)
 	} else if count > 0 {
-		logger.Debugf("disabled %v inbounds", count)
-		j.xrayService.SetToNeedRestart()
+		logger.Debugf("%v inbounds disabled", count)
+		if needRestart {
+			j.xrayService.SetToNeedRestart()
+		}
 	}
 }

@@ -23,8 +23,8 @@ import (
 	"x-ui/web/network"
 	"x-ui/web/service"
 
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
+	sessions "github.com/Calidity/gin-sessions"
+	"github.com/Calidity/gin-sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron/v3"
 )
@@ -252,6 +252,9 @@ func (s *Server) startTask() {
 
 	// check client ips from log file every 10 sec
 	s.cron.AddJob("@every 10s", job.NewCheckClientIpJob())
+
+	// check client ips from log file every 3 day
+	s.cron.AddJob("@every 3d", job.NewClearLogsJob())
 
 	// Make a traffic condition every day, 8:30
 	var entry cron.EntryID

@@ -18,7 +18,7 @@
                 </template>
             </a-tooltip>
         </span>
-        <a-icon @click="client.email = RandomUtil.randomText()" type="sync"> </a-icon>
+        <a-icon @click="client.email = RandomUtil.randomLowerAndNum(8)" type="sync"> </a-icon>
         <a-input v-model.trim="client.email" style="width: 200px;"></a-input>
     </a-form-item>
     <a-form-item label="Password" v-if="inbound.protocol === Protocols.TROJAN || inbound.protocol === Protocols.SHADOWSOCKS">
@@ -27,9 +27,6 @@
         <a-input v-model.trim="client.password" style="width: 300px;"></a-input>
     </a-form-item>
     <br>
-    <a-form-item label='{{ i18n "additional" }} ID' v-if="inbound.protocol === Protocols.VMESS">
-        <a-input-number v-model="client.alterId"></a-input-number>
-    </a-form-item>
     <a-form-item label="ID" v-if="inbound.protocol === Protocols.VMESS || inbound.protocol === Protocols.VLESS">
         <a-icon @click="client.id = RandomUtil.randomUUID()" type="sync"> </a-icon>
         <a-input v-model.trim="client.id" style="width: 300px;"></a-input>
@@ -44,7 +41,7 @@
                 <a-icon type="question-circle" theme="filled"></a-icon>
             </a-tooltip>
         </span>
-        <a-icon @click="client.subId = RandomUtil.randomText()" type="sync"> </a-icon>
+        <a-icon @click="client.subId = RandomUtil.randomLowerAndNum(16)" type="sync"> </a-icon>
         <a-input v-model.trim="client.subId" style="width: 150px;"></a-input>
     </a-form-item>
     <a-form-item v-if="client.email && app.tgBotEnable" >
@@ -72,31 +69,32 @@
 		<a-input-number v-model="client.limitIp" min="0"></a-input-number>
 	</a-form-item>
 	<a-form-item v-if="client.email && client.limitIp > 0 && isEdit">
-		<span slot="label">
-			<span>{{ i18n "pages.inbounds.IPLimitlog" }}</span>
-			<a-tooltip>
-				<template slot="title">
-				<span>{{ i18n "pages.inbounds.IPLimitlogDesc" }}</span>
-				</template>
-				<a-icon type="question-circle" theme="filled"></a-icon>
-			</a-tooltip>
-			<a-tooltip>
-				<template slot="title">
-				<span>{{ i18n "pages.inbounds.IPLimitlogclear" }}</span>
-				</template>
-				<span style="color: #FF4D4F">
-				<a-icon type="delete" @click="clearDBClientIps(client.email)"></a-icon>
-				</span>
-			</a-tooltip>
-		</span>
-		<a-form layout="block">
-			<a-textarea id="clientIPs" readonly 
-                        @click="getDBClientIps(client.email,$event)"
-                        placeholder="Click To Get IPs"
-                        :auto-size="{ minRows: 2, maxRows: 10 }">
-			</a-textarea>
-		</a-form>
-	</a-form-item>
+        <span slot="label">
+          <span>{{ i18n "pages.inbounds.IPLimitlog" }}</span>
+          <a-tooltip>
+            <template slot="title">
+              <span>{{ i18n "pages.inbounds.IPLimitlogDesc" }}</span>
+            </template>
+            <a-icon type="question-circle" theme="filled"></a-icon>
+          </a-tooltip>
+          <a-tooltip>
+            <template slot="title">
+              <span>{{ i18n "pages.inbounds.IPLimitlogclear" }}</span>
+            </template>
+            <span style="color: #FF4D4F">
+              <a-icon type="delete" @click="clearDBClientIps(client.email)"></a-icon>
+            </span>
+          </a-tooltip>
+        </span>
+        <a-form layout="block">
+          <a-textarea id="clientIPs" readonly 
+            @click="getDBClientIps(client.email)"
+            placeholder="Click To Get IPs"
+            :auto-size="{ minRows: 5, maxRows: 10 }"
+          >
+          </a-textarea>
+        </a-form>
+    </a-form-item>
     <br>
     <a-form-item v-if="inbound.xtls" label="Flow">
         <a-select v-model="client.flow" style="width: 200px" :dropdown-class-name="themeSwitcher.darkCardClass">

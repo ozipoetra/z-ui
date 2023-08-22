@@ -70,7 +70,7 @@
                 case Protocols.VMESS: return clients.push(new Inbound.VmessSettings.Vmess());
                 case Protocols.VLESS: return clients.push(new Inbound.VLESSSettings.VLESS());
                 case Protocols.TROJAN: return clients.push(new Inbound.TrojanSettings.Trojan());
-                case Protocols.SHADOWSOCKS: return clients.push(new Inbound.ShadowsocksSettings.Shadowsocks());
+                case Protocols.SHADOWSOCKS: return clients.push(new Inbound.ShadowsocksSettings.Shadowsocks(clients[0].method));
                 default: return null;
             }
         },
@@ -120,26 +120,32 @@
             },
         },
         methods: {
-            async getDBClientIps(email, event) {
-                const msg = await HttpUtil.post('/panel/inbound/clientIps/' + email);
+            async getDBClientIps(email) {
+                const msg = await HttpUtil.post(`/panel/inbound/clientIps/${email}`);
                 if (!msg.success) {
+                    document.getElementById("clientIPs").value = msg.obj;
                     return;
                 }
-                try {
-                    ips = JSON.parse(msg.obj)
-                    ips = ips.join(",")
-                    event.target.value = ips
-                } catch (error) {
-                    // text
-                    event.target.value = msg.obj
+                let ips = msg.obj;
+                if (typeof ips === 'string' && ips.startsWith('[') && ips.endsWith(']')) {
+                    try {
+                        ips = JSON.parse(ips);
+                        ips = Array.isArray(ips) ? ips.join("\n") : ips;
+                    } catch (e) {
+                        console.error('Error parsing JSON:', e);
+                    }
                 }
+                document.getElementById("clientIPs").value = ips;
             },
             async clearDBClientIps(email) {
-                const msg = await HttpUtil.post('/panel/inbound/clearClientIps/' + email);
-                if (!msg.success) {
-                    return;
+                try {
+                    const msg = await HttpUtil.post(`/panel/inbound/clearClientIps/${email}`);
+                    if (!msg.success) {
+                        return;
+                    }
+                    document.getElementById("clientIPs").value = "";
+                } catch (error) {
                 }
-                document.getElementById("clientIPs").value = ""
             },
             resetClientTraffic(email, dbInboundId, iconElement) {
                 this.$confirm({

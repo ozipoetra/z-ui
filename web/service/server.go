@@ -12,8 +12,10 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
+
 	"x-ui/config"
 	"x-ui/database"
 	"x-ui/logger"
@@ -86,31 +88,24 @@ type ServerService struct {
 	inboundService InboundService
 }
 
-const DebugMode = false // Set to true during development
-
 func getPublicIP(url string) string {
 	resp, err := http.Get(url)
 	if err != nil {
-		if DebugMode {
-			logger.Warning("get public IP failed:", err)
-		}
 		return "N/A"
 	}
 	defer resp.Body.Close()
 
 	ip, err := io.ReadAll(resp.Body)
 	if err != nil {
-		if DebugMode {
-			logger.Warning("read public IP failed:", err)
-		}
 		return "N/A"
 	}
 
-	if string(ip) == "" {
-		return "N/A" // default value
+	ipString := string(ip)
+	if ipString == "" {
+		return "N/A"
 	}
 
-	return string(ip)
+	return ipString
 }
 
 func (s *ServerService) GetStatus(lastStatus *Status) *Status {
@@ -230,7 +225,7 @@ func (s *ServerService) GetStatus(lastStatus *Status) *Status {
 }
 
 func (s *ServerService) GetXrayVersions() ([]string, error) {
-	url := "https://api.github.com/repos/MHSanaei/Xray-core/releases"
+	url := "https://api.github.com/repos/XTLS/Xray-core/releases"
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -249,9 +244,11 @@ func (s *ServerService) GetXrayVersions() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	versions := make([]string, 0, len(releases))
+	var versions []string
 	for _, release := range releases {
-		versions = append(versions, release.TagName)
+		if release.TagName >= "v1.7.5" {
+			versions = append(versions, release.TagName)
+		}
 	}
 	return versions, nil
 }
@@ -297,7 +294,7 @@ func (s *ServerService) downloadXRay(version string) (string, error) {
 	}
 
 	fileName := fmt.Sprintf("Xray-%s-%s.zip", osName, arch)
-	url := fmt.Sprintf("https://github.com/MHSanaei/Xray-core/releases/download/%s/%s", version, fileName)
+	url := fmt.Sprintf("https://github.com/XTLS/Xray-core/releases/download/%s/%s", version, fileName)
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -378,54 +375,44 @@ func (s *ServerService) UpdateXray(version string) error {
 	if err != nil {
 		return err
 	}
-	err = copyZipFile("iran.dat", xray.GetIranPath())
-	if err != nil {
-		return err
-	}
 
 	return nil
-
 }
 
-func (s *ServerService) GetLogs(count string) ([]string, error) {
-	// Define the journalctl command and its arguments
-	var cmdArgs []string
-	if runtime.GOOS == "linux" {
-		cmdArgs = []string{"journalctl", "-u", "x-ui", "--no-pager", "-n", count}
+func (s *ServerService) GetLogs(count string, level string, syslog string) []string {
+	c, _ := strconv.Atoi(count)
+	var lines []string
+
+	if syslog == "true" {
+		cmdArgs := []string{"journalctl", "-u", "x-ui", "--no-pager", "-n", count, "-p", level}
+		// Run the command
+		cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		err := cmd.Run()
+		if err != nil {
+			return []string{"Failed to run journalctl command!"}
+		}
+		lines = strings.Split(out.String(), "\n")
 	} else {
-		return []string{"Unsupported operating system"}, nil
+		lines = logger.GetLogs(c, level)
 	}
 
-	// Run the command
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
-		return nil, err
-	}
-
-	lines := strings.Split(out.String(), "\n")
-
-	return lines, nil
+	return lines
 }
 
 func (s *ServerService) GetConfigJson() (interface{}, error) {
-	// Open the file for reading
-	file, err := os.Open(xray.GetConfigPath())
+	config, err := s.xrayService.GetXrayConfig()
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
-
-	// Read the file contents
-	fileContents, err := io.ReadAll(file)
+	contents, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return nil, err
 	}
 
 	var jsonData interface{}
-	err = json.Unmarshal(fileContents, &jsonData)
+	err = json.Unmarshal(contents, &jsonData)
 	if err != nil {
 		return nil, err
 	}

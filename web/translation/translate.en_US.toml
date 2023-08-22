@@ -39,7 +39,6 @@
 "depleted" = "Depleted"
 "depletingSoon" = "Depleting soon"
 "domainName" = "Domain name"
-"additional" = "Alter"
 "monitor" = "Listening IP"
 "certificate" = "Certificate"
 "fail" = "Fail"
@@ -49,6 +48,7 @@
 "clients" = "Clients"
 "usage" = "Usage"
 "secretToken" = "Secret Token"
+"remained" = "Remained"
 
 [menu]
 "dashboard" = "System Status"
@@ -72,7 +72,7 @@
 "title" = "System Status"
 "memory" = "Memory"
 "hard" = "Hard Disk"
-"xrayStatus" = "Xray Status"
+"xrayStatus" = "Status"
 "stopXray" = "Stop"
 "restartXray" = "Restart"
 "xraySwitch" = "SwitchV"
@@ -245,6 +245,8 @@
 "telegramNotifyTimeDesc" = "Use Crontab timing format."
 "tgNotifyBackup" = "Database Backup"
 "tgNotifyBackupDesc" = "Include database backup file with report notification."
+"tgNotifyLogin" = "Login Notification"
+"tgNotifyLoginDesc" = "Displays the username, IP address, and time when someone tries to log into your panel."
 "sessionMaxAge" = "Session maximum age"
 "sessionMaxAgeDesc" = "The duration of a login session (unit: minute)"
 "expireTimeDiff" = "Expiration threshold for notification"
