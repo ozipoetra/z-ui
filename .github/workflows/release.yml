@@ -35,7 +35,7 @@ jobs:
           if [ "${{ matrix.platform }}" == "arm64" ]; then
             export CC=aarch64-linux-gnu-gcc
           fi
-          go build -o zui-release -v .
+          go build -o zui-release .
           
           mkdir z-ui
           cp zui-release z-ui/
