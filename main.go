@@ -15,7 +15,7 @@ import (
 	"x-ui/web"
 	"x-ui/web/global"
 	"x-ui/web/service"
-
+	"C"
 	"github.com/op/go-logging"
 )
 
