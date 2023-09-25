@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v4.1.0
 
       - name: Build z-ui
         run: |
@@ -32,10 +32,10 @@ jobs:
           wget https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/iran.dat
           mv xray ozip-linux-amd64
           cd ../..
-          
+
       - name: Package
         run: tar -zcvf z-ui-linux-amd64.tar.gz z-ui
-        
+
       - name: Upload
         uses: svenstaro/upload-release-action@2.6.0
         with:
