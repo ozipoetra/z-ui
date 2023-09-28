@@ -96,7 +96,7 @@ before_show_menu() {
 }
 
 install() {
-    bash <(curl -Ls https://raw.githubusercontent.com/MHSanaei/3x-ui/main/install.sh)
+    bash <(curl -Ls https://raw.githubusercontent.com/ozipoetra/z-ui/main/install.sh)
     if [[ $? == 0 ]]; then
         if [[ $# == 0 ]]; then
             start
@@ -115,7 +115,7 @@ update() {
         fi
         return 0
     fi
-    bash <(curl -Ls https://raw.githubusercontent.com/MHSanaei/3x-ui/main/install.sh)
+    bash <(curl -Ls https://raw.githubusercontent.com/ozipoetra/z-ui/main/install.sh)
     if [[ $? == 0 ]]; then
         LOGI "Update is complete, Panel has automatically restarted "
         exit 0
@@ -130,16 +130,16 @@ uninstall() {
         fi
         return 0
     fi
-    systemctl stop x-ui
-    systemctl disable x-ui
-    rm /etc/systemd/system/x-ui.service -f
+    systemctl stop z-ui
+    systemctl disable z-ui
+    rm /etc/systemd/system/z-ui.service -f
     systemctl daemon-reload
     systemctl reset-failed
-    rm /etc/x-ui/ -rf
-    rm /usr/local/x-ui/ -rf
+    rm /etc/z-ui/ -rf
+    rm /usr/local/z-ui/ -rf
 
     echo ""
-    echo -e "Uninstalled Successfully, If you want to remove this script, then after exiting the script run ${green}rm /usr/bin/x-ui -f${plain} to delete it."
+    echo -e "Uninstalled Successfully, If you want to remove this script, then after exiting the script run ${green}rm /usr/bin/z-ui -f${plain} to delete it."
     echo ""
 
     if [[ $# == 0 ]]; then
@@ -159,12 +159,12 @@ reset_user() {
     [[ -z $config_account ]] && config_account=$(date +%s%N | md5sum | cut -c 1-8)
     read -rp "Please set the login password [default is a random password]: " config_password
     [[ -z $config_password ]] && config_password=$(date +%s%N | md5sum | cut -c 1-8)
-    /usr/local/x-ui/x-ui setting -username ${config_account} -password ${config_password} >/dev/null 2>&1
-    /usr/local/x-ui/x-ui setting -remove_secret >/dev/null 2>&1
+    /usr/local/z-ui/z-ui setting -username ${config_account} -password ${config_password} >/dev/null 2>&1
+    /usr/local/z-ui/z-ui setting -remove_secret >/dev/null 2>&1
     echo -e "Panel login username has been reset to: ${green} ${config_account} ${plain}"
     echo -e "Panel login password has been reset to: ${green} ${config_password} ${plain}"
     echo -e "${yellow} Panel login secret token disabled ${plain}"
-    echo -e "${green} Please use the new login username and password to access the X-UI panel. Also remember them! ${plain}"
+    echo -e "${green} Please use the new login username and password to access the z-ui panel. Also remember them! ${plain}"
     confirm_restart
 }
 
@@ -176,13 +176,13 @@ reset_config() {
         fi
         return 0
     fi
-    /usr/local/x-ui/x-ui setting -reset
+    /usr/local/z-ui/z-ui setting -reset
     echo -e "All panel settings have been reset to default, Please restart the panel now, and use the default ${green}2053${plain} Port to Access the web Panel"
     confirm_restart
 }
 
 check_config() {
-    info=$(/usr/local/x-ui/x-ui setting -show true)
+    info=$(/usr/local/z-ui/z-ui setting -show true)
     if [[ $? != 0 ]]; then
         LOGE "get current settings error, please check logs"
         show_menu
@@ -196,7 +196,7 @@ set_port() {
         LOGD "Cancelled"
         before_show_menu
     else
-        /usr/local/x-ui/x-ui setting -port ${port}
+        /usr/local/z-ui/z-ui setting -port ${port}
         echo -e "The port is set, Please restart the panel now, and use the new port ${green}${port}${plain} to access web panel"
         confirm_restart
     fi
@@ -208,11 +208,11 @@ start() {
         echo ""
         LOGI "Panel is running, No need to start again, If you need to restart, please select restart"
     else
-        systemctl start x-ui
+        systemctl start z-ui
         sleep 2
         check_status
         if [[ $? == 0 ]]; then
-            LOGI "x-ui Started Successfully"
+            LOGI "z-ui Started Successfully"
         else
             LOGE "panel Failed to start, Probably because it takes longer than two seconds to start, Please check the log information later"
         fi
@@ -229,11 +229,11 @@ stop() {
         echo ""
         LOGI "Panel stopped, No need to stop again!"
     else
-        systemctl stop x-ui
+        systemctl stop z-ui
         sleep 2
         check_status
         if [[ $? == 1 ]]; then
-            LOGI "x-ui and xray stopped successfully"
+            LOGI "z-ui and xray stopped successfully"
         else
             LOGE "Panel stop failed, Probably because the stop time exceeds two seconds, Please check the log information later"
         fi
@@ -245,11 +245,11 @@ stop() {
 }
 
 restart() {
-    systemctl restart x-ui
+    systemctl restart z-ui
     sleep 2
     check_status
     if [[ $? == 0 ]]; then
-        LOGI "x-ui and xray Restarted successfully"
+        LOGI "z-ui and xray Restarted successfully"
     else
         LOGE "Panel restart failed, Probably because it takes longer than two seconds to start, Please check the log information later"
     fi
@@ -259,18 +259,18 @@ restart() {
 }
 
 status() {
-    systemctl status x-ui -l
+    systemctl status z-ui -l
     if [[ $# == 0 ]]; then
         before_show_menu
     fi
 }
 
 enable() {
-    systemctl enable x-ui
+    systemctl enable z-ui
     if [[ $? == 0 ]]; then
-        LOGI "x-ui Set to boot automatically on startup successfully"
+        LOGI "z-ui Set to boot automatically on startup successfully"
     else
-        LOGE "x-ui Failed to set Autostart"
+        LOGE "z-ui Failed to set Autostart"
     fi
 
     if [[ $# == 0 ]]; then
@@ -279,11 +279,11 @@ enable() {
 }
 
 disable() {
-    systemctl disable x-ui
+    systemctl disable z-ui
     if [[ $? == 0 ]]; then
-        LOGI "x-ui Autostart Cancelled successfully"
+        LOGI "z-ui Autostart Cancelled successfully"
     else
-        LOGE "x-ui Failed to cancel autostart"
+        LOGE "z-ui Failed to cancel autostart"
     fi
 
     if [[ $# == 0 ]]; then
@@ -292,7 +292,7 @@ disable() {
 }
 
 show_log() {
-    journalctl -u x-ui.service -e --no-pager -f
+    journalctl -u z-ui.service -e --no-pager -f
     if [[ $# == 0 ]]; then
         before_show_menu
     fi
@@ -349,23 +349,23 @@ enable_bbr() {
 }
 
 update_shell() {
-    wget -O /usr/bin/x-ui -N --no-check-certificate https://github.com/MHSanaei/3x-ui/raw/main/x-ui.sh
+    wget -O /usr/bin/z-ui -N --no-check-certificate https://github.com/ozipoetra/z-ui/raw/main/z-ui.sh
     if [[ $? != 0 ]]; then
         echo ""
         LOGE "Failed to download script, Please check whether the machine can connect Github"
         before_show_menu
     else
-        chmod +x /usr/bin/x-ui
+        chmod +x /usr/bin/z-ui
         LOGI "Upgrade script succeeded, Please rerun the script" && exit 0
     fi
 }
 
 # 0: running, 1: not running, 2: not installed
 check_status() {
-    if [[ ! -f /etc/systemd/system/x-ui.service ]]; then
+    if [[ ! -f /etc/systemd/system/z-ui.service ]]; then
         return 2
     fi
-    temp=$(systemctl status x-ui | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
+    temp=$(systemctl status z-ui | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
     if [[ "${temp}" == "running" ]]; then
         return 0
     else
@@ -374,7 +374,7 @@ check_status() {
 }
 
 check_enabled() {
-    temp=$(systemctl is-enabled x-ui)
+    temp=$(systemctl is-enabled z-ui)
     if [[ "${temp}" == "enabled" ]]; then
         return 0
     else
@@ -438,7 +438,7 @@ show_enable_status() {
 }
 
 check_xray_status() {
-    count=$(ps -ef | grep "xray-linux" | grep -v "grep" | wc -l)
+    count=$(ps -ef | grep "ozip-linux" | grep -v "grep" | wc -l)
     if [[ count -ne 0 ]]; then
         return 0
     else
@@ -508,8 +508,8 @@ open_ports() {
 }
 
 update_geo() {
-    local defaultBinFolder="/usr/local/x-ui/bin"
-    read -p "Please enter x-ui bin folder path. Leave blank for default. (Default: '${defaultBinFolder}')" binFolder
+    local defaultBinFolder="/usr/local/z-ui/bin"
+    read -p "Please enter z-ui bin folder path. Leave blank for default. (Default: '${defaultBinFolder}')" binFolder
     binFolder=${binFolder:-${defaultBinFolder}}
     if [[ ! -d ${binFolder} ]]; then
         LOGE "Folder ${binFolder} not exists!"
@@ -517,13 +517,13 @@ update_geo() {
         mkdir -p ${binFolder}
     fi
 
-    systemctl stop x-ui
+    systemctl stop z-ui
     cd ${binFolder}
     rm -f geoip.dat geosite.dat iran.dat
     wget -N https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
     wget -N https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
     wget -N https://github.com/MasterKia/iran-hosted-domains/releases/latest/download/iran.dat
-    systemctl start x-ui
+    systemctl start z-ui
     echo -e "${green}Geosite.dat + Geoip.dat + Iran.dat have been updated successfully in bin folder '${binfolder}'!${plain}"
     before_show_menu
 }
@@ -752,7 +752,7 @@ warp_cloudflare() {
         0)
             show_menu ;;
         1) 
-            bash <(curl -sSL https://raw.githubusercontent.com/hamid-gh98/x-ui-scripts/main/install_warp_proxy.sh)
+            bash <(curl -sSL https://raw.githubusercontent.com/hamid-gh98/z-ui-scripts/main/install_warp_proxy.sh)
             ;;
         2) 
             warp a
@@ -1006,45 +1006,45 @@ remove_iplimit(){
 }
 
 show_usage() {
-    echo "x-ui control menu usages: "
+    echo "z-ui control menu usages: "
     echo "------------------------------------------"
-    echo -e "x-ui              - Enter control menu"
-    echo -e "x-ui start        - Start x-ui "
-    echo -e "x-ui stop         - Stop  x-ui "
-    echo -e "x-ui restart      - Restart x-ui "
-    echo -e "x-ui status       - Show x-ui status"
-    echo -e "x-ui enable       - Enable x-ui on system startup"
-    echo -e "x-ui disable      - Disable x-ui on system startup"
-    echo -e "x-ui log          - Check x-ui logs"
-    echo -e "x-ui banlog       - Check Fail2ban ban logs"
-    echo -e "x-ui update       - Update x-ui "
-    echo -e "x-ui install      - Install x-ui "
-    echo -e "x-ui uninstall    - Uninstall x-ui "
+    echo -e "z-ui              - Enter control menu"
+    echo -e "z-ui start        - Start z-ui "
+    echo -e "z-ui stop         - Stop  z-ui "
+    echo -e "z-ui restart      - Restart z-ui "
+    echo -e "z-ui status       - Show z-ui status"
+    echo -e "z-ui enable       - Enable z-ui on system startup"
+    echo -e "z-ui disable      - Disable z-ui on system startup"
+    echo -e "z-ui log          - Check z-ui logs"
+    echo -e "z-ui banlog       - Check Fail2ban ban logs"
+    echo -e "z-ui update       - Update z-ui "
+    echo -e "z-ui install      - Install z-ui "
+    echo -e "z-ui uninstall    - Uninstall z-ui "
     echo "------------------------------------------"
 }
 
 show_menu() {
     echo -e "
-  ${green}3X-ui Panel Management Script${plain}
+  ${green}z-ui Panel Management Script${plain}
   ${green}0.${plain} Exit Script
 ————————————————
-  ${green}1.${plain} Install x-ui
-  ${green}2.${plain} Update x-ui
-  ${green}3.${plain} Uninstall x-ui
+  ${green}1.${plain} Install z-ui
+  ${green}2.${plain} Update z-ui
+  ${green}3.${plain} Uninstall z-ui
 ————————————————
   ${green}4.${plain} Reset Username & Password & Secret Token
   ${green}5.${plain} Reset Panel Settings
   ${green}6.${plain} Change Panel Port
   ${green}7.${plain} View Current Panel Settings
 ————————————————
-  ${green}8.${plain} Start x-ui
-  ${green}9.${plain} Stop x-ui
-  ${green}10.${plain} Restart x-ui
-  ${green}11.${plain} Check x-ui Status
-  ${green}12.${plain} Check x-ui Logs
+  ${green}8.${plain} Start z-ui
+  ${green}9.${plain} Stop z-ui
+  ${green}10.${plain} Restart z-ui
+  ${green}11.${plain} Check z-ui Status
+  ${green}12.${plain} Check z-ui Logs
 ————————————————
-  ${green}13.${plain} Enable x-ui On System Startup
-  ${green}14.${plain} Disable x-ui On System Startup
+  ${green}13.${plain} Enable z-ui On System Startup
+  ${green}14.${plain} Disable z-ui On System Startup
 ————————————————
   ${green}15.${plain} SSL Certificate Management
   ${green}16.${plain} Cloudflare SSL Certificate
