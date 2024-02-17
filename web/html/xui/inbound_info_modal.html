@@ -164,7 +164,7 @@
             </tr>
         </table>
         <template v-if="app.subSettings.enable && infoModal.clientSettings.subId">
-            <a-divider>Subscription link</a-divider>
+            <a-divider>Subscription URL</a-divider>
             <a-row>
                 <a-col :sx="24" :md="22"><a :href="[[ infoModal.subLink ]]" target="_blank">[[ infoModal.subLink ]]</a></a-col>
                 <a-col :sx="24" :md="2" style="text-align: right;">
@@ -264,6 +264,45 @@
                 <td><a-tag color="green">[[ account.pass ]]</a-tag></td>
             </tr>
         </table>
+        <table v-if="dbInbound.isWireguard" style="margin-bottom: 10px; width: 100%;">
+            <tr class="client-table-odd-row">
+                <td>{{ i18n "pages.xray.wireguard.secretKey" }}</td>
+                <td>[[ inbound.settings.secretKey ]]</td>
+            </tr>
+            <tr>
+                <td>{{ i18n "pages.xray.wireguard.publicKey" }}</td>
+                <td>[[ inbound.settings.pubKey ]]</td>
+            </tr>
+            <tr class="client-table-odd-row">
+                <td>MTU</td>
+                <td>[[ inbound.settings.mtu ]]</td>
+            </tr>
+            <tr>
+                <td>Kernel Mode</td>
+                <td>[[ inbound.settings.kernelMode ]]</td>
+            </tr>
+        <template v-for="(peer, index) in inbound.settings.peers">
+            <tr>
+                <td colspan="2"><a-tag>Peer [[ index + 1 ]]</a-tag></td>
+            </tr>
+            <tr class="client-table-odd-row">
+                <td>{{ i18n "pages.xray.wireguard.publicKey" }}</td>
+                <td>[[ peer.publicKey ]]</td>
+            </tr>
+            <tr>
+                <td>{{ i18n "pages.xray.wireguard.psk" }}</td>
+                <td>[[ peer.psk ]]</td>
+            </tr>
+            <tr class="client-table-odd-row">
+                <td>{{ i18n "pages.xray.wireguard.allowedIPs" }}</td>
+                <td>[[ peer.allowedIPs.join(",") ]]</td>
+            </tr>
+            <tr>
+                <td>Keep Alive</td>
+                <td>[[ peer.keepAlive ]]</td>
+            </tr>
+        </table>
+        </template>
     </template>
 </a-modal>
 <script>

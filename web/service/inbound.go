@@ -38,9 +38,25 @@ func (s *InboundService) GetAllInbounds() ([]*model.Inbound, error) {
 	return inbounds, nil
 }
 
-func (s *InboundService) checkPortExist(port int, ignoreId int) (bool, error) {
+func (s *InboundService) checkPortExist(listen string, port int, ignoreId int) (bool, error) {
 	db := database.GetDB()
-	db = db.Model(model.Inbound{}).Where("port = ?", port)
+	if listen == "" || listen == "0.0.0.0" || listen == "::" || listen == "::0" {
+		db = db.Model(model.Inbound{}).Where("port = ?", port)
+	} else {
+		db = db.Model(model.Inbound{}).
+			Where("port = ?", port).
+			Where(
+				db.Model(model.Inbound{}).Where(
+					"listen = ?", listen,
+				).Or(
+					"listen = \"\"",
+				).Or(
+					"listen = \"0.0.0.0\"",
+				).Or(
+					"listen = \"::\"",
+				).Or(
+					"listen = \"::0\""))
+	}
 	if ignoreId > 0 {
 		db = db.Where("id != ?", ignoreId)
 	}
@@ -135,7 +151,7 @@ func (s *InboundService) checkEmailExistForInbound(inbound *model.Inbound) (stri
 }
 
 func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, bool, error) {
-	exist, err := s.checkPortExist(inbound.Port, 0)
+	exist, err := s.checkPortExist(inbound.Listen, inbound.Port, 0)
 	if err != nil {
 		return inbound, false, err
 	}
@@ -252,7 +268,7 @@ func (s *InboundService) GetInbound(id int) (*model.Inbound, error) {
 }
 
 func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, bool, error) {
-	exist, err := s.checkPortExist(inbound.Port, inbound.Id)
+	exist, err := s.checkPortExist(inbound.Listen, inbound.Port, inbound.Id)
 	if err != nil {
 		return inbound, false, err
 	}
@@ -295,7 +311,11 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 	oldInbound.Settings = inbound.Settings
 	oldInbound.StreamSettings = inbound.StreamSettings
 	oldInbound.Sniffing = inbound.Sniffing
-	oldInbound.Tag = fmt.Sprintf("inbound-%v", inbound.Port)
+	if inbound.Listen == "" || inbound.Listen == "0.0.0.0" || inbound.Listen == "::" || inbound.Listen == "::0" {
+		oldInbound.Tag = fmt.Sprintf("inbound-0.0.0.0:%v", inbound.Port)
+	} else {
+		oldInbound.Tag = fmt.Sprintf("inbound-%v:%v", inbound.Listen, inbound.Port)
+	}
 
 	needRestart := false
 	s.xrayApi.Init(p.GetAPIPort())
@@ -488,6 +508,10 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 		}
 	}
 
+	if len(newClients) == 0 {
+		return false, common.NewError("no client remained in Inbound")
+	}
+
 	settings["clients"] = newClients
 	newSettings, err := json.MarshalIndent(settings, "", "  ")
 	if err != nil {
@@ -658,7 +682,7 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 	return needRestart, tx.Save(oldInbound).Error
 }
 
-func (s *InboundService) AddTraffic(inboundTraffics []*xray.Traffic, clientTraffics []*xray.ClientTraffic) (error, bool) {
+func (s *InboundService) AddTraffic(traffics []*xray.Traffic, clientTraffics []*xray.ClientTraffic) (error, bool) {
 	var err error
 	db := database.GetDB()
 	tx := db.Begin()
@@ -670,7 +694,7 @@ func (s *InboundService) AddTraffic(inboundTraffics []*xray.Traffic, clientTraff
 			tx.Commit()
 		}
 	}()
-	err = s.addInboundTraffic(tx, inboundTraffics)
+	err = s.addInboundTraffic(tx, traffics)
 	if err != nil {
 		return err, false
 	}
@@ -1146,6 +1170,8 @@ func (s *InboundService) SetClientTelegramUserID(trafficId int, tgId string) err
 		if oldClient.Email == clientEmail {
 			if inbound.Protocol == "trojan" {
 				clientId = oldClient.Password
+			} else if inbound.Protocol == "shadowsocks" {
+				clientId = oldClient.Email
 			} else {
 				clientId = oldClient.ID
 			}
@@ -1184,6 +1210,32 @@ func (s *InboundService) SetClientTelegramUserID(trafficId int, tgId string) err
 	return nil
 }
 
+func (s *InboundService) checkIsEnabledByEmail(clientEmail string) (bool, error) {
+	_, inbound, err := s.GetClientInboundByEmail(clientEmail)
+	if err != nil {
+		return false, err
+	}
+	if inbound == nil {
+		return false, common.NewError("Inbound Not Found For Email:", clientEmail)
+	}
+
+	clients, err := s.GetClients(inbound)
+	if err != nil {
+		return false, err
+	}
+
+	isEnable := false
+
+	for _, client := range clients {
+		if client.Email == clientEmail {
+			isEnable = client.Enable
+			break
+		}
+	}
+
+	return isEnable, err
+}
+
 func (s *InboundService) ToggleClientEnableByEmail(clientEmail string) (bool, error) {
 	_, inbound, err := s.GetClientInboundByEmail(clientEmail)
 	if err != nil {
@@ -1205,6 +1257,8 @@ func (s *InboundService) ToggleClientEnableByEmail(clientEmail string) (bool, er
 		if oldClient.Email == clientEmail {
 			if inbound.Protocol == "trojan" {
 				clientId = oldClient.Password
+			} else if inbound.Protocol == "shadowsocks" {
+				clientId = oldClient.Email
 			} else {
 				clientId = oldClient.ID
 			}
@@ -1266,6 +1320,8 @@ func (s *InboundService) ResetClientIpLimitByEmail(clientEmail string, count int
 		if oldClient.Email == clientEmail {
 			if inbound.Protocol == "trojan" {
 				clientId = oldClient.Password
+			} else if inbound.Protocol == "shadowsocks" {
+				clientId = oldClient.Email
 			} else {
 				clientId = oldClient.ID
 			}
@@ -1324,6 +1380,8 @@ func (s *InboundService) ResetClientExpiryTimeByEmail(clientEmail string, expiry
 		if oldClient.Email == clientEmail {
 			if inbound.Protocol == "trojan" {
 				clientId = oldClient.Password
+			} else if inbound.Protocol == "shadowsocks" {
+				clientId = oldClient.Email
 			} else {
 				clientId = oldClient.ID
 			}
@@ -1385,6 +1443,8 @@ func (s *InboundService) ResetClientTrafficLimitByEmail(clientEmail string, tota
 		if oldClient.Email == clientEmail {
 			if inbound.Protocol == "trojan" {
 				clientId = oldClient.Password
+			} else if inbound.Protocol == "shadowsocks" {
+				clientId = oldClient.Email
 			} else {
 				clientId = oldClient.ID
 			}
@@ -1613,10 +1673,10 @@ func (s *InboundService) DelDepletedClients(id int) (err error) {
 	return nil
 }
 
-func (s *InboundService) GetClientTrafficTgBot(tguname string) ([]*xray.ClientTraffic, error) {
+func (s *InboundService) GetClientTrafficTgBot(tgId string) ([]*xray.ClientTraffic, error) {
 	db := database.GetDB()
 	var inbounds []*model.Inbound
-	err := db.Model(model.Inbound{}).Where("settings like ?", fmt.Sprintf(`%%"tgId": "%s"%%`, tguname)).Find(&inbounds).Error
+	err := db.Model(model.Inbound{}).Where("settings like ?", fmt.Sprintf(`%%"tgId": "%s"%%`, tgId)).Find(&inbounds).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
@@ -1627,7 +1687,7 @@ func (s *InboundService) GetClientTrafficTgBot(tguname string) ([]*xray.ClientTr
 			logger.Error("Unable to get clients from inbound")
 		}
 		for _, client := range clients {
-			if client.TgID == tguname {
+			if client.TgID == tgId {
 				emails = append(emails, client.Email)
 			}
 		}

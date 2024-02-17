@@ -77,8 +77,8 @@
                 <a-row>
                     <a-col :sm="24" :md="12">
                         <a-card hoverable>
-                            3X: <a href="https://github.com/MHSanaei/3x-ui/releases" target="_blank"><a-tag color="green">v{{ .cur_ver }}</a-tag></a>
-                            Xray: <a-tag color="green" style="cursor: pointer;" @click="openSelectV2rayVersion">v[[ status.xray.version ]]</a-tag>
+                            3X-UI <a href="https://github.com/MHSanaei/3x-ui/releases" target="_blank"><a-tag color="green">v{{ .cur_ver }}</a-tag></a>
+                            Xray <a-tag color="green" style="cursor: pointer;" @click="openSelectV2rayVersion">v[[ status.xray.version ]]</a-tag>
                             <a href="https://t.me/panel3xui" target="_blank"><a-tag color="green">@panel3xui</a-tag></a>
                         </a-card>
                     </a-col>
@@ -96,7 +96,7 @@
                             <a-tag :color="status.xray.color">[[ status.xray.state ]]</a-tag>
                             <a-popover v-if="status.xray.state === State.Error"
                                 :overlay-class-name="themeSwitcher.currentTheme">
-                                <span slot="title" style="font-size: 12pt">Error in running xray-core
+                                <span slot="title" style="font-size: 12pt">An error occurred while running Xray
                                     <a-tag color="purple" style="cursor: pointer; float: right;" @click="openLogs()">{{ i18n "pages.index.logs" }}</a-tag>
                                 </span>
                                 <template slot="content">
@@ -112,9 +112,9 @@
                     <a-col :sm="24" :md="12">
                         <a-card hoverable>
                             {{ i18n "pages.index.operationHours" }}:
-                            Xray:
+                            Xray
                             <a-tag color="green">[[ formatSecond(status.appStats.uptime) ]]</a-tag>
-                            OS:
+                            OS
                             <a-tag color="green">[[ formatSecond(status.uptime) ]]</a-tag>
                         </a-card>
                     </a-col>
@@ -132,7 +132,7 @@
                     <a-col :sm="24" :md="12">
                         <a-card hoverable>
                             {{ i18n "usage"}}:
-                            Memory [[ sizeFormat(status.appStats.mem) ]] -
+                            RAM [[ sizeFormat(status.appStats.mem) ]] -
                             Threads [[ status.appStats.threads ]]
                             </a-tooltip>
                         </a-card>
@@ -141,6 +141,7 @@
                         <a-card hoverable>
                             <a-row>
                                 <a-col :span="12">
+                                    <a-icon type="global"></a-icon>
                                     IPv4:
                                     <a-tooltip>
                                         <template slot="title">
@@ -150,6 +151,7 @@
                                     </a-tooltip>
                                 </a-col>
                                 <a-col :span="12">
+                                    <a-icon type="global"></a-icon>
                                     IPv6:
                                     <a-tooltip>
                                         <template slot="title">
@@ -165,6 +167,7 @@
                         <a-card hoverable>
                             <a-row>
                                 <a-col :span="12">
+                                    <a-icon type="swap"></a-icon>
                                     TCP:  [[ status.tcpCount ]]
                                     <a-tooltip>
                                         <template slot="title">
@@ -174,6 +177,7 @@
                                     </a-tooltip>
                                 </a-col>
                                 <a-col :span="12">
+                                    <a-icon type="swap"></a-icon>
                                     UDP:  [[ status.udpCount ]]
                                     <a-tooltip>
                                         <template slot="title">
@@ -190,7 +194,7 @@
                             <a-row>
                                 <a-col :span="12">
                                     <a-icon type="arrow-up"></a-icon>
-                                    [[ sizeFormat(status.netIO.up) ]]/S
+                                    [[ sizeFormat(status.netIO.up) ]]/s
                                     <a-tooltip>
                                         <template slot="title">
                                             {{ i18n "pages.index.upSpeed" }}
@@ -200,7 +204,7 @@
                                 </a-col>
                                 <a-col :span="12">
                                     <a-icon type="arrow-down"></a-icon>
-                                    [[ sizeFormat(status.netIO.down) ]]/S
+                                    [[ sizeFormat(status.netIO.down) ]]/s
                                     <a-tooltip>
                                         <template slot="title">
                                             {{ i18n "pages.index.downSpeed" }}
@@ -246,8 +250,10 @@
              :closable="true" @ok="() => versionModal.visible = false"
              :class="themeSwitcher.currentTheme"
              footer="">
-        <h2>{{ i18n "pages.index.xraySwitchClick"}}</h2>
-        <h2>{{ i18n "pages.index.xraySwitchClickDesk"}}</h2>
+        <a-alert type="warning" style="margin-bottom: 12px; width: fit-content"
+        message='{{ i18n "pages.index.xraySwitchClickDesk" }}'
+        show-icon
+        ></a-alert>
         <template v-for="version, index in versionModal.versions">
             <a-tag :color="index % 2 == 0 ? 'purple' : 'green'"
                    style="margin: 10px" @click="switchV2rayVersion(version)">
@@ -293,12 +299,12 @@
             </a-form-item>
             <a-form-item>
                 <a-button type="primary" style="margin-bottom: 10px;"
-                :href="'data:application/text;charset=utf-8,' + encodeURIComponent(logModal.logs)" download="x-ui.log">
+                :href="'data:application/text;charset=utf-8,' + encodeURIComponent(logModal.logs.join('\n'))" download="x-ui.log">
                     {{ i18n "download" }} x-ui.log
                 </a-button>
             </a-form-item>
         </a-form>
-        <div class="ant-input" style="height: auto; max-height: 500px; overflow: auto;" v-html="logModal.logs"></div>
+        <div class="ant-input" style="height: auto; max-height: 500px; overflow: auto;" v-html="logModal.formattedLogs"></div>
     </a-modal>
 
     <a-modal id="backup-modal" v-model="backupModal.visible" :title="backupModal.title"
@@ -426,14 +432,16 @@
 
     const logModal = {
         visible: false,
-        logs: '',
+        logs: [],
+        formattedLogs: '',
         rows: 20,
         level: 'info',
         syslog: false,
         loading: false,
         show(logs) {
             this.visible = true;
-            this.logs = logs? this.formatLogs(logs) : "No Record...";
+            this.logs = logs || []; 
+            this.formattedLogs = this.logs.length > 0 ? this.formatLogs(this.logs) : "No Record...";
         },
         formatLogs(logs) {
             let formattedLogs = '';

@@ -95,7 +95,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 						if !clientTraffic.Enable {
 							clients = RemoveIndex(clients, index-indexDecrease)
 							indexDecrease++
-							logger.Info("Remove Inbound User", c["email"], "due the expire or traffic limit")
+							logger.Info("Remove Inbound User ", c["email"], " due the expire or traffic limit")
 
 						}
 
@@ -185,7 +185,7 @@ func (s *XrayService) RestartXray(isForce bool) error {
 		return err
 	}
 
-	if p != nil && p.IsRunning() {
+	if s.IsXrayRunning() {
 		if !isForce && p.GetConfig().Equals(xrayConfig) {
 			logger.Debug("It does not need to restart xray")
 			return nil

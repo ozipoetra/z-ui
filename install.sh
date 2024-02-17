@@ -26,10 +26,15 @@ echo "The OS release is: $release"
 arch3xui() {
     case "$(uname -m)" in
     x86_64 | x64 | amd64) echo 'amd64' ;;
-    armv8 | arm64 | aarch64) echo 'arm64' ;;
+    i*86 | x86) echo '386' ;;
+    armv8* | armv8 | arm64 | aarch64) echo 'arm64' ;;
+    armv7* | armv7 | arm) echo 'armv7' ;;
+    armv6* | armv6) echo 'armv6' ;;
+    armv5* | armv5) echo 'armv5' ;;
     *) echo -e "${green}Unsupported CPU architecture! ${plain}" && rm -f install.sh && exit 1 ;;
     esac
 }
+
 echo "arch: $(arch3xui)"
 
 os_version=""
@@ -45,20 +50,34 @@ elif [[ "${release}" == "almalinux" ]]; then
     fi
 elif [[ "${release}" == "ubuntu" ]]; then
     if [[ ${os_version} -lt 20 ]]; then
-        echo -e "${red}please use Ubuntu 20 or higher version!${plain}\n" && exit 1
+        echo -e "${red} Please use Ubuntu 20 or higher version!${plain}\n" && exit 1
     fi
 
 elif [[ "${release}" == "fedora" ]]; then
     if [[ ${os_version} -lt 36 ]]; then
-        echo -e "${red}please use Fedora 36 or higher version!${plain}\n" && exit 1
+        echo -e "${red} Please use Fedora 36 or higher version!${plain}\n" && exit 1
     fi
 
 elif [[ "${release}" == "debian" ]]; then
-    if [[ ${os_version} -lt 10 ]]; then
-        echo -e "${red} Please use Debian 10 or higher ${plain}\n" && exit 1
+    if [[ ${os_version} -lt 11 ]]; then
+        echo -e "${red} Please use Debian 11 or higher ${plain}\n" && exit 1
+    fi
+
+elif [[ "${release}" == "almalinux" ]]; then
+    if [[ ${os_version} -lt 9 ]]; then
+        echo -e "${red} Please use AlmaLinux 9 or higher ${plain}\n" && exit 1
+    fi
+
+elif [[ "${release}" == "rocky" ]]; then
+    if [[ ${os_version} -lt 9 ]]; then
+        echo -e "${red} Please use RockyLinux 9 or higher ${plain}\n" && exit 1
     fi
 elif [[ "${release}" == "arch" ]]; then
-    echo "OS is ArchLinux"
+    echo "Your OS is ArchLinux"
+elif [[ "${release}" == "manjaro" ]]; then
+    echo "Your OS is Manjaro"
+elif [[ "${release}" == "armbian" ]]; then
+    echo "Your OS is Armbian"
 
 else
     echo -e "${red}Failed to check the OS version, please contact the author!${plain}" && exit 1
@@ -66,23 +85,25 @@ fi
 
 install_base() {
     case "${release}" in
-        centos|fedora)
-            yum install -y -q wget curl tar
-            ;;
-        arch)
-            pacman -Syu --noconfirm wget curl tar
-            ;;
-        *)
-            apt install -y -q wget curl tar
-            ;;
+    centos | almalinux | rocky)
+        yum -y update && yum install -y -q wget curl tar
+        ;;
+    fedora)
+        dnf -y update && dnf install -y -q wget curl tar
+        ;;
+    arch | manjaro)
+        pacman -Syu && pacman -Syu --noconfirm wget curl tar
+        ;;
+    *)
+        apt-get update && apt install -y -q wget curl tar
+        ;;
     esac
 }
-
 
 # This function will be called when user installed z-ui out of sercurity
 config_after_install() {
     echo -e "${yellow}Install/update finished! For security it's recommended to modify panel settings ${plain}"
-    read -p "Do you want to continue with the modification [y/n]? ": config_confirm
+    read -p "Do you want to continue with the modification [y/n]?": config_confirm
     if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
         read -p "Please set up your username:" config_account
         echo -e "${yellow}Your username will be:${config_account}${plain}"
@@ -148,18 +169,21 @@ install_z-ui() {
     tar zxvf z-ui-linux-$(arch3xui).tar.gz
     rm z-ui-linux-$(arch3xui).tar.gz -f
     cd z-ui
+    chmod +x z-ui
+
+    # Check the system's architecture and rename the file accordingly
+    if [[ $(arch3xui) == "armv5" || $(arch3xui) == "armv6" || $(arch3xui) == "armv7" ]]; then
+        mv bin/ozip-linux-$(arch3xui) bin/ozip-linux-arm
+        chmod +x bin/ozip-linux-arm
+    fi
+
     chmod +x z-ui bin/ozip-linux-$(arch3xui)
     cp -f z-ui.service /etc/systemd/system/
     wget --no-check-certificate -O /usr/bin/z-ui https://raw.githubusercontent.com/ozipoetra/z-ui/main/z-ui.sh
     chmod +x /usr/local/z-ui/z-ui.sh
     chmod +x /usr/bin/z-ui
     config_after_install
-    #echo -e "If it is a new installation, the default web port is ${green}2053${plain}, The username and password are ${green}admin${plain} by default"
-    #echo -e "Please make sure that this port is not occupied by other procedures,${yellow} And make sure that port 2053 has been released${plain}"
-    #    echo -e "If you want to modify the 2053 to other ports and enter the z-ui command to modify it, you must also ensure that the port you modify is also released"
-    #echo -e ""
-    #echo -e "If it is updated panel, access the panel in your previous way"
-    #echo -e ""
+
     systemctl daemon-reload
     systemctl enable z-ui
     systemctl start z-ui

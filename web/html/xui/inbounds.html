@@ -161,9 +161,9 @@
                                 </a-col>
                             </a-row>
                         </div>
-                        <div style="display: flex; align-items: center; justify-content: flex-start;">
+                        <div :style="isMobile ? '' : 'display: flex; align-items: center; justify-content: flex-start;'">
                             <a-switch v-model="enableFilter"
-                                style="margin-right: .5rem;"
+                                :style="isMobile ? 'margin-bottom: .5rem; display: flex;' : 'margin-right: .5rem;'"
                                 @change="toggleFilter">
                                 <a-icon slot="checkedChildren" type="search"></a-icon>
                                 <a-icon slot="unCheckedChildren" type="filter"></a-icon>
@@ -230,7 +230,7 @@
                                         </template>
                                         <a-menu-item key="clipboard">
                                             <a-icon type="copy"></a-icon>
-                                            {{ i18n "pages.inbounds.copyToClipboard" }}
+                                            {{ i18n "pages.inbounds.exportInbound" }}
                                         </a-menu-item>
                                         <a-menu-item key="resetTraffic">
                                             <a-icon type="retweet"></a-icon> {{ i18n "pages.inbounds.resetTraffic" }}
@@ -244,7 +244,7 @@
                                             </span>
                                         </a-menu-item>
                                         <a-menu-item v-if="isMobile">
-                                            <a-switch size="small" v-model="dbInbound.enable" @change="switchEnable(dbInbound.id)"></a-switch>
+                                            <a-switch size="small" v-model="dbInbound.enable" @change="switchEnable(dbInbound.id,dbInbound.enable)"></a-switch>
                                             {{ i18n "pages.inbounds.enable" }}
                                         </a-menu-item>
                                     </a-menu>
@@ -314,7 +314,7 @@
                                 </a-popover>
                             </template>
                             <template slot="enable" slot-scope="text, dbInbound">
-                                <a-switch v-model="dbInbound.enable" @change="switchEnable(dbInbound.id)"></a-switch>
+                                <a-switch v-model="dbInbound.enable" @change="switchEnable(dbInbound.id,dbInbound.enable)"></a-switch>
                             </template>
                             <template slot="expiryTime" slot-scope="text, dbInbound">
                                 <a-popover v-if="dbInbound.expiryTime > 0" :overlay-class-name="themeSwitcher.currentTheme">
@@ -427,7 +427,7 @@
                                     :columns="isMobile ? innerMobileColumns : innerColumns"
                                     :data-source="getInboundClients(record)"
                                     :pagination=pagination(getInboundClients(record))
-                                    style="margin: -12px 2px -13px;">
+                                    :style="isMobile ? 'margin: -12px 2px -13px;' : 'margin: -12px 22px -13px;'">
                                     {{template "client_table"}}
                                 </a-table>
                             </template>
@@ -446,27 +446,28 @@
 <script src="{{ .base_path }}assets/js/model/xray.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/js/model/dbinbound.js?{{ .cur_ver }}"></script>
 {{template "component/themeSwitcher" .}}
+{{template "component/persianDatepicker" .}}
 <script>
     const columns = [{
         title: "ID",
         align: 'right',
         dataIndex: "id",
-        width: 40,
+        width: 30,
         responsive: ["xs"],
     }, {
         title: '{{ i18n "pages.inbounds.operate" }}',
         align: 'center',
-        width: 40,
+        width: 30,
         scopedSlots: { customRender: 'action' },
     }, {
         title: '{{ i18n "pages.inbounds.enable" }}',
         align: 'center',
-        width: 40,
+        width: 30,
         scopedSlots: { customRender: 'enable' },
     }, {
         title: '{{ i18n "pages.inbounds.remark" }}',
         align: 'center',
-        width: 80,
+        width: 60,
         dataIndex: "remark",
     }, {
         title: '{{ i18n "pages.inbounds.port" }}',
@@ -476,7 +477,7 @@
     }, {
         title: '{{ i18n "pages.inbounds.protocol" }}',
         align: 'left',
-        width: 90,
+        width: 70,
         scopedSlots: { customRender: 'protocol' },
     }, {
         title: '{{ i18n "clients" }}',
@@ -491,7 +492,7 @@
     }, {
         title: '{{ i18n "pages.inbounds.expireDate" }}',
         align: 'center',
-        width: 60,
+        width: 40,
         scopedSlots: { customRender: 'expiryTime' },
     }];
 
@@ -539,6 +540,7 @@
         data: {
             siderDrawer,
             themeSwitcher,
+            persianDatepicker,
             spinning: false,
             inbounds: [],
             dbInbounds: [],
@@ -560,6 +562,7 @@
                 subURI : ''
             },
             remarkModel: '-ieo',
+            datepicker: 'gregorian',
             tgBotEnable: false,
             pageSize: 0,
             isMobile: window.innerWidth <= 768,
@@ -605,6 +608,7 @@
                     };
                     this.pageSize = pageSize;
                     this.remarkModel = remarkModel;
+                    this.datepicker = datepicker;
                 }
             },
             setInbounds(dbInbounds) {
@@ -1030,8 +1034,9 @@
                 newDbInbound = this.checkFallback(dbInbound);
                 infoModal.show(newDbInbound, index);
             },
-            switchEnable(dbInboundId) {
+            switchEnable(dbInboundId,state) {
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                dbInbound.enable = state;
                 this.submit(`/panel/inbound/update/${dbInboundId}`, dbInbound);
             },
             async switchEnableClient(dbInboundId, client) {

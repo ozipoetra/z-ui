@@ -6,7 +6,8 @@
 <link rel="stylesheet" href="{{ .base_path }}assets/codemirror/xq.css?{{ .cur_ver }}">
 <link rel="stylesheet" href="{{ .base_path }}assets/codemirror/lint/lint.css">
 
-<script src="{{ .base_path }}assets/js/model/outbound.js"></script>
+<script src="{{ .base_path }}assets/base64/base64.min.js"></script>
+<script src="{{ .base_path }}assets/js/model/outbound.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/codemirror/codemirror.js"></script>
 <script src="{{ .base_path }}assets/codemirror/javascript.js"></script>
 <script src="{{ .base_path }}assets/codemirror/jshint.js"></script>
@@ -80,17 +81,21 @@
                                 </a-space>
                             </a-col>
                             <a-col :xs="24" :sm="16">
-                                <a-back-top :target="() => document.getElementById('content-layout')" visibility-height="200">
-                                </a-back-top>
-                                <a-alert type="warning" style="float: right; width: fit-content"
-                                message='{{ i18n "pages.settings.infoDesc" }}'
-                                show-icon
-                                >
+                                <template>
+                                    <div>
+                                        <a-back-top :target="() => document.getElementById('content-layout')" visibility-height="200">
+                                        </a-back-top>
+                                        <a-alert type="warning" style="float: right; width: fit-content"
+                                        message='{{ i18n "pages.settings.infoDesc" }}'
+                                        show-icon
+                                        >
+                                    </div>
+                                </template>
                             </a-col>
                         </a-row>
                     </a-card>
                     <a-tabs class="ant-card-dark-box-nohover" default-active-key="tpl-1"
-                    @change="(activeKey) => { if(activeKey == 'tpl-4') this.changeCode(); }"
+                    @change="(activeKey) => { if(activeKey == 'tpl-advanced') this.changeCode(); }"
                     :class="themeSwitcher.currentTheme">
                         <a-tab-pane key="tpl-1" tab='{{ i18n "pages.xray.basicTemplate"}}'>
                             <a-space direction="horizontal" style="padding: 20px 20px">
@@ -119,7 +124,7 @@
                                                         v-model="freedomStrategy"
                                                         :dropdown-class-name="themeSwitcher.currentTheme"
                                                         style="width: 100%">
-                                                        <a-select-option v-for="s in outboundDomainStrategies" :value="s">[[ s ]]</a-select-option>
+                                                        <a-select-option v-for="s in OutboundDomainStrategies" :value="s">[[ s ]]</a-select-option>
                                                     </a-select>
                                                 </template>
                                             </a-col>
@@ -142,6 +147,40 @@
                                             </template>
                                         </a-col>
                                     </a-row>
+                                    <a-row style="padding: 20px">
+                                        <a-col :lg="24" :xl="12">
+                                            <a-list-item-meta 
+                                                title='{{ i18n "pages.xray.logLevel" }}'
+                                                description='{{ i18n "pages.xray.logLevelDesc" }}'/>
+                                        </a-col>
+                                        <a-col :lg="24" :xl="12">
+                                            <template>
+                                                <a-select
+                                                    v-model="setLogLevel"
+                                                    :dropdown-class-name="themeSwitcher.currentTheme"
+                                                    style="width: 100%">
+                                                    <a-select-option v-for="s in logLevel" :value="s">[[ s ]]</a-select-option>
+                                                </a-select>
+                                            </template>
+                                        </a-col>
+                                    </a-row>
+                                    <a-row style="padding: 20px">
+                                        <a-col :lg="24" :xl="12">
+                                            <a-list-item-meta 
+                                                title='{{ i18n "pages.xray.accessLog" }}'
+                                                description='{{ i18n "pages.xray.accessLogDesc" }}'/>
+                                        </a-col>
+                                        <a-col :lg="24" :xl="12">
+                                            <template>
+                                                <a-select
+                                                    v-model="setAccessLog"
+                                                    :dropdown-class-name="themeSwitcher.currentTheme"
+                                                    style="width: 100%">
+                                                    <a-select-option v-for="s in access" :value="s">[[ s ]]</a-select-option>
+                                                </a-select>
+                                            </template>
+                                        </a-col>
+                                    </a-row>
                                 </a-list-item>
                                 </a-collapse-panel>
                                 <a-collapse-panel header='{{ i18n "pages.xray.blockConfigs"}}'>
@@ -157,6 +196,7 @@
                                     <setting-list-item type="switch" title='{{ i18n "pages.xray.PrivateIp"}}' desc='{{ i18n "pages.xray.PrivateIpDesc"}}' v-model="privateIpSettings"></setting-list-item>
                                     <setting-list-item type="switch" title='{{ i18n "pages.xray.Ads"}}' desc='{{ i18n "pages.xray.AdsDesc"}}' v-model="AdsSettings"></setting-list-item>
                                     <setting-list-item type="switch" title='{{ i18n "pages.xray.Family"}}' desc='{{ i18n "pages.xray.FamilyDesc"}}' v-model="familyProtectSettings"></setting-list-item>
+                                    <setting-list-item type="switch" title='{{ i18n "pages.xray.Security"}}' desc='{{ i18n "pages.xray.SecurityDesc"}}' v-model="SecuritySettings"></setting-list-item>
                                     <setting-list-item type="switch" title='{{ i18n "pages.xray.Speedtest"}}' desc='{{ i18n "pages.xray.SpeedtestDesc"}}' v-model="SpeedTestSettings"></setting-list-item>
                                 </a-collapse-panel>
                                 <a-collapse-panel header='{{ i18n "pages.xray.blockCountryConfigs"}}'>
@@ -174,6 +214,8 @@
                                     <setting-list-item type="switch" title='{{ i18n "pages.xray.ChinaDomain"}}' desc='{{ i18n "pages.xray.ChinaDomainDesc"}}' v-model="ChinaDomainSettings"></setting-list-item>
                                     <setting-list-item type="switch" title='{{ i18n "pages.xray.RussiaIp"}}' desc='{{ i18n "pages.xray.RussiaIpDesc"}}' v-model="RussiaIpSettings"></setting-list-item>
                                     <setting-list-item type="switch" title='{{ i18n "pages.xray.RussiaDomain"}}' desc='{{ i18n "pages.xray.RussiaDomainDesc"}}' v-model="RussiaDomainSettings"></setting-list-item>
+				                    <setting-list-item type="switch" title='{{ i18n "pages.xray.VNIp"}}' desc='{{ i18n "pages.xray.VNIpDesc"}}' v-model="VNIpSettings"></setting-list-item>
+                                    <setting-list-item type="switch" title='{{ i18n "pages.xray.VNDomain"}}' desc='{{ i18n "pages.xray.VNDomainDesc"}}' v-model="VNDomainSettings"></setting-list-item>
                                 </a-collapse-panel>
                                 <a-collapse-panel header='{{ i18n "pages.xray.directCountryConfigs"}}'>
                                     <a-row :xs="24" :sm="24" :lg="12">
@@ -190,6 +232,8 @@
                                     <setting-list-item type="switch" title='{{ i18n "pages.xray.DirectChinaDomain"}}' desc='{{ i18n "pages.xray.DirectChinaDomainDesc"}}' v-model="ChinaDomainDirectSettings"></setting-list-item>
                                     <setting-list-item type="switch" title='{{ i18n "pages.xray.DirectRussiaIp"}}' desc='{{ i18n "pages.xray.DirectRussiaIpDesc"}}' v-model="RussiaIpDirectSettings"></setting-list-item>
                                     <setting-list-item type="switch" title='{{ i18n "pages.xray.DirectRussiaDomain"}}' desc='{{ i18n "pages.xray.DirectRussiaDomainDesc"}}' v-model="RussiaDomainDirectSettings"></setting-list-item>
+				                    <setting-list-item type="switch" title='{{ i18n "pages.xray.DirectVNIp"}}' desc='{{ i18n "pages.xray.DirectVNIpDesc"}}' v-model="VNIpDirectSettings"></setting-list-item>
+                                    <setting-list-item type="switch" title='{{ i18n "pages.xray.DirectVNDomain"}}' desc='{{ i18n "pages.xray.DirectVNDomainDesc"}}' v-model="VNDomainDirectSettings"></setting-list-item>									
                                 </a-collapse-panel>
                                 <a-collapse-panel header='{{ i18n "pages.xray.ipv4Configs"}}'>
                                     <a-row :xs="24" :sm="24" :lg="12">
@@ -212,10 +256,13 @@
                                             </template>
                                         </a-alert>
                                     </a-row>
+                                <template v-if="WarpExist">
                                     <setting-list-item type="switch" title='{{ i18n "pages.xray.GoogleWARP"}}' desc='{{ i18n "pages.xray.GoogleWARPDesc"}}' v-model="GoogleWARPSettings"></setting-list-item>
                                     <setting-list-item type="switch" title='{{ i18n "pages.xray.OpenAIWARP"}}' desc='{{ i18n "pages.xray.OpenAIWARPDesc"}}' v-model="OpenAIWARPSettings"></setting-list-item>
                                     <setting-list-item type="switch" title='{{ i18n "pages.xray.NetflixWARP"}}' desc='{{ i18n "pages.xray.NetflixWARPDesc"}}' v-model="NetflixWARPSettings"></setting-list-item>
                                     <setting-list-item type="switch" title='{{ i18n "pages.xray.SpotifyWARP"}}' desc='{{ i18n "pages.xray.SpotifyWARPDesc"}}' v-model="SpotifyWARPSettings"></setting-list-item>
+                                </template>
+                                <a-button v-else style="margin: 10px 0;" @click="showWarp">WARP {{ i18n "pages.xray.rules.outbound" }}</a-button>
                                 </a-collapse-panel>
                             </a-collapse>
                         </a-tab-pane>
@@ -280,6 +327,14 @@
                                         [[ rule.outboundTag ]]
                                     </a-popover>
                                 </template>
+                                <template slot="balancer" slot-scope="text, rule, index">
+                                    <a-popover :overlay-class-name="themeSwitcher.currentTheme">
+                                        <template slot="content">
+                                            <p v-if="rule.balancerTag">Balancer Tag: [[ rule.balancerTag ]]</p>
+                                        </template>
+                                        [[ rule.balancerTag ]]
+                                    </a-popover>
+                                </template>
                                 <template slot="info" slot-scope="text, rule, index">
                                     <a-popover placement="bottomRight"
                                         v-if="(rule.source+rule.sourcePort+rule.network+rule.protocol+rule.attrs+rule.ip+rule.domain+rule.port).length>0"
@@ -328,79 +383,126 @@
                             </a-table>
                         </a-tab-pane>
                         <a-tab-pane key="tpl-3" tab='{{ i18n "pages.xray.Outbounds"}}' style="padding-top: 20px;" force-render="true">
-                            <a-button type="primary" icon="plus" @click="addOutbound()">{{ i18n "pages.xray.outbound.addOutbound" }}</a-button>
-                            <a-button type="primary" icon="plus" @click="addReverse()">{{ i18n "pages.xray.outbound.addReverse" }}</a-button>
                             <a-row>
-                                <a-col :sm="24" :md="12">
-                                    <p style="margin: 10px;">{{ i18n "pages.xray.Outbounds"}}</p>
-                                    <a-table :columns="outboundColumns" bordered
-                                    :row-key="r => r.key"
-                                    :data-source="outboundData"
-                                    :scroll="isMobile ? {} : { x: 200 }"
-                                    :pagination="false"
-                                    :indent-size="0"
-                                    :style="isMobile ? 'padding: 5px 5px' : 'margin-right: 1px;'">
-                                        <template slot="action" slot-scope="text, outbound, index">
-                                            [[ index+1 ]]
-                                            <a-dropdown :trigger="['click']">
-                                                <a-icon @click="e => e.preventDefault()" type="more" style="font-size: 16px; text-decoration: bold;"></a-icon>
-                                                <a-menu slot="overlay" :theme="themeSwitcher.currentTheme">
-                                                    <a-menu-item @click="editOutbound(index)">
-                                                        <a-icon type="edit"></a-icon>
-                                                        {{ i18n "edit" }}
-                                                    </a-menu-item>
-                                                    <a-menu-item @click="deleteOutbound(index)">
-                                                        <span style="color: #FF4D4F">
-                                                            <a-icon type="delete"></a-icon> {{ i18n "delete"}}
-                                                        </span>
-                                                    </a-menu-item>
-                                                </a-menu>
-                                            </a-dropdown>
-                                        </template>
-                                        <template slot="address" slot-scope="text, outbound, index">
-                                            <p style="margin: 0 5px;" v-for="addr in findOutboundAddress(outbound)">[[ addr ]]</p>
-                                        </template>
-                                        <template slot="protocol" slot-scope="text, outbound, index">
-                                            <a-tag style="margin:0;" color="purple">[[ outbound.protocol ]]</a-tag>
-                                            <template v-if="[Protocols.VMess, Protocols.VLESS, Protocols.Trojan, Protocols.Shadowsocks].includes(outbound.protocol)">
-                                                <a-tag style="margin:0;" color="blue">[[ outbound.streamSettings.network ]]</a-tag>
-                                                <a-tag style="margin:0;" v-if="outbound.streamSettings.security=='tls'" color="green">tls</a-tag>
-                                                <a-tag style="margin:0;" v-if="outbound.streamSettings.security=='reality'" color="green">reality</a-tag>
-                                            </template>
-                                        </template>
-                                    </a-table>
+                                <a-col :xs="12" :sm="12" :lg="12">
+                                    <a-button type="primary" icon="plus" @click="addOutbound()" style="margin-bottom: 10px;">{{ i18n
+                                        "pages.xray.outbound.addOutbound" }}</a-button>
+                                    <a-button type="primary" @click="showWarp()" style="margin-bottom: 10px;">WARP</a-button>
                                 </a-col>
-                                <a-col :sm="24" :md="12" v-if="reverseData.length>0">
-                                    <p style="margin: 10px;">{{ i18n "pages.xray.outbound.reverse"}}</p>
-                                    <a-table :columns="reverseColumns" bordered
-                                    :row-key="r => r.key"
-                                    :data-source="reverseData"
-                                    :scroll="isMobile ? {} : { x: 200 }"
-                                    :pagination="false"
-                                    :indent-size="0"
-                                    :style="isMobile ? 'padding: 5px 0' : 'margin-left: 1px;'">
-                                        <template slot="action" slot-scope="text, reverse, index">
-                                            [[ index+1 ]]
-                                            <a-dropdown :trigger="['click']">
-                                                <a-icon @click="e => e.preventDefault()" type="more" style="font-size: 16px; text-decoration: bold;"></a-icon>
-                                                <a-menu slot="overlay" :theme="themeSwitcher.currentTheme">
-                                                    <a-menu-item @click="editReverse(index)">
-                                                        <a-icon type="edit"></a-icon>
-                                                        {{ i18n "edit" }}
-                                                    </a-menu-item>
-                                                    <a-menu-item @click="deleteReverse(index)">
-                                                        <span style="color: #FF4D4F">
-                                                            <a-icon type="delete"></a-icon> {{ i18n "delete"}}
-                                                        </span>
-                                                    </a-menu-item>
-                                                </a-menu>
-                                            </a-dropdown>
-                                        </template>
-                                    </a-table>
+                                <a-col :xs="12" :sm="12" :lg="12" style="text-align: right;">
+                                    <a-icon type="sync" :spin="refreshing" @click="refreshOutboundTraffic()" style="margin: 0 5px;"></a-icon>
+                                    <a-icon type="retweet" @click="resetOutboundTraffic(-1)"></a-icon>
                                 </a-col>
                             </a-row>
+                            <a-table :columns="outboundColumns" bordered
+                            :row-key="r => r.key"
+                            :data-source="outboundData"
+                            :scroll="isMobile ? {} : { x: 200 }"
+                            :pagination="false"
+                            :indent-size="0"
+                            :style="isMobile ? 'padding: 5px 5px' : 'margin-right: 1px;'">
+                                <template slot="action" slot-scope="text, outbound, index">
+                                    [[ index+1 ]]
+                                    <a-dropdown :trigger="['click']">
+                                        <a-icon @click="e => e.preventDefault()" type="more" style="font-size: 16px; text-decoration: bold;"></a-icon>
+                                        <a-menu slot="overlay" :theme="themeSwitcher.currentTheme">
+                                            <a-menu-item @click="editOutbound(index)">
+                                                <a-icon type="edit"></a-icon>
+                                                {{ i18n "edit" }}
+                                            </a-menu-item>
+                                            <a-menu-item @click="resetOutboundTraffic(index)">
+                                                <span>
+                                                    <a-icon type="retweet"></a-icon> {{ i18n "pages.inbounds.resetTraffic"}}
+                                                </span>
+                                            </a-menu-item>
+                                            <a-menu-item @click="deleteOutbound(index)">
+                                                <span style="color: #FF4D4F">
+                                                    <a-icon type="delete"></a-icon> {{ i18n "delete"}}
+                                                </span>
+                                            </a-menu-item>
+                                        </a-menu>
+                                    </a-dropdown>
+                                </template>
+                                <template slot="address" slot-scope="text, outbound, index">
+                                    <p style="margin: 0 5px;" v-for="addr in findOutboundAddress(outbound)">[[ addr ]]</p>
+                                </template>
+                                <template slot="protocol" slot-scope="text, outbound, index">
+                                    <a-tag style="margin:0;" color="purple">[[ outbound.protocol ]]</a-tag>
+                                    <template v-if="[Protocols.VMess, Protocols.VLESS, Protocols.Trojan, Protocols.Shadowsocks].includes(outbound.protocol)">
+                                        <a-tag style="margin:0;" color="blue">[[ outbound.streamSettings.network ]]</a-tag>
+                                        <a-tag style="margin:0;" v-if="outbound.streamSettings.security=='tls'" color="green">tls</a-tag>
+                                        <a-tag style="margin:0;" v-if="outbound.streamSettings.security=='reality'" color="green">reality</a-tag>
+                                    </template>
+                                </template>
+                                <template slot="traffic" slot-scope="text, outbound, index">
+                                    <a-tag color="green">[[ findOutboundTraffic(outbound) ]]</a-tag>
+                                </template>
+                            </a-table>
                         </a-tab-pane>
-                        <a-tab-pane key="tpl-4" tab='{{ i18n "pages.xray.advancedTemplate"}}' style="padding-top: 20px;" force-render="true">
+                        <a-tab-pane key="tpl-4" tab='{{ i18n "pages.xray.outbound.reverse"}}' style="padding-top: 20px;" force-render="true">
+                            <a-button type="primary" icon="plus" @click="addReverse()" style="margin-bottom: 10px;">{{ i18n "pages.xray.outbound.addReverse" }}</a-button>
+                            <a-table :columns="reverseColumns" bordered
+                            :row-key="r => r.key"
+                            :data-source="reverseData"
+                            :scroll="isMobile ? {} : { x: 200 }"
+                            :pagination="false"
+                            :indent-size="0"
+                            :style="isMobile ? 'padding: 5px 0' : 'margin-left: 1px;'">
+                                <template slot="action" slot-scope="text, reverse, index">
+                                    [[ index+1 ]]
+                                    <a-dropdown :trigger="['click']">
+                                        <a-icon @click="e => e.preventDefault()" type="more" style="font-size: 16px; text-decoration: bold;"></a-icon>
+                                        <a-menu slot="overlay" :theme="themeSwitcher.currentTheme">
+                                            <a-menu-item @click="editReverse(index)">
+                                                <a-icon type="edit"></a-icon>
+                                                {{ i18n "edit" }}
+                                            </a-menu-item>
+                                            <a-menu-item @click="deleteReverse(index)">
+                                                <span style="color: #FF4D4F">
+                                                    <a-icon type="delete"></a-icon> {{ i18n "delete"}}
+                                                </span>
+                                            </a-menu-item>
+                                        </a-menu>
+                                    </a-dropdown>
+                                </template>
+                            </a-table>
+                        </a-tab-pane>
+                        <a-tab-pane key="tpl-balancers" tab='{{ i18n "pages.xray.Balancers"}}' style="padding-top: 20px;" force-render="true">
+                            <a-button type="primary" icon="plus" @click="addBalancer()" style="margin-bottom: 10px;">{{ i18n "pages.xray.balancer.addBalancer"}}</a-button>
+                            <a-table :columns="balancerColumns" bordered
+                            :row-key="r => r.key"
+                            :data-source="balancersData"
+                            :scroll="isMobile ? {} : { x: 200 }"
+                            :pagination="false"
+                            :indent-size="0"
+                            :style="isMobile ? 'padding: 5px 0' : 'margin-left: 1px;'">
+                                <template slot="action" slot-scope="text, balancer, index">
+                                    [[ index+1 ]]
+                                    <a-dropdown :trigger="['click']">
+                                        <a-icon @click="e => e.preventDefault()" type="more" style="font-size: 16px; text-decoration: bold;"></a-icon>
+                                        <a-menu slot="overlay" :theme="themeSwitcher.currentTheme">
+                                            <a-menu-item @click="editBalancer(index)">
+                                                <a-icon type="edit"></a-icon>
+                                                {{ i18n "edit" }}
+                                            </a-menu-item>
+                                            <a-menu-item @click="deleteBalancer(index)">
+                                                <span style="color: #FF4D4F">
+                                                    <a-icon type="delete"></a-icon> {{ i18n "delete"}}
+                                                </span>
+                                            </a-menu-item>
+                                        </a-menu>
+                                    </a-dropdown>
+                                </template>
+                                <template slot="strategy" slot-scope="text, balancer, index">
+                                    <a-tag style="margin:0;" v-if="balancer.strategy=='random'" color="purple">Random</a-tag>
+                                    <a-tag style="margin:0;" v-if="balancer.strategy=='roundRobin'" color="green">Round Robin</a-tag>
+                                </template>
+                                <template slot="selector" slot-scope="text, balancer, index">
+                                    <a-tag class="info-large-tag" style="margin:1;" v-for="sel in balancer.selector">[[ sel ]]</a-tag>
+                                </template>
+                            </a-table>                            
+                        </a-tab-pane>
+                        <a-tab-pane key="tpl-advanced" tab='{{ i18n "pages.xray.advancedTemplate"}}' style="padding-top: 20px;" force-render="true">
                             <a-list-item-meta title='{{ i18n "pages.xray.Template"}}' description='{{ i18n "pages.xray.TemplateDesc"}}'></a-list-item-meta>
                             <a-radio-group v-model="advSettings" @change="changeCode" button-style="solid" style="margin: 10px 0;" :size="isMobile ? 'small' : ''">
                                 <a-radio-button value="xraySetting">{{ i18n "pages.xray.completeTemplate"}}</a-radio-button>
@@ -422,12 +524,14 @@
 {{template "ruleModal"}}
 {{template "outModal"}}
 {{template "reverseModal"}}
+{{template "balancerModal"}}
+{{template "warpModal"}}
 <script>
         const rulesColumns = [
         { title: "#", align: 'center', width: 15, scopedSlots: { customRender: 'action' } },
         { title: '{{ i18n "pages.xray.rules.source"}}', children: [
             { title: 'IP', dataIndex: "source", align: 'center', width: 20, ellipsis: true },
-            { title: 'port', dataIndex: 'sourcePort', align: 'center', width: 10, ellipsis: true } ]},
+            { title: 'Port', dataIndex: 'sourcePort', align: 'center', width: 10, ellipsis: true } ]},
         { title: '{{ i18n "pages.inbounds.network"}}', children: [
             { title: 'L4', dataIndex: 'network', align: 'center', width: 10 },
             { title: 'Protocol', dataIndex: 'protocol', align: 'center', width: 10, ellipsis: true },
@@ -437,9 +541,10 @@
             { title: 'Domain', dataIndex: 'domain', align: 'center', width: 20, ellipsis: true },
             { title: 'Port', dataIndex: 'port', align: 'center', width: 10, ellipsis: true }]},
         { title: '{{ i18n "pages.xray.rules.inbound"}}', children: [
-            { title: 'Inbound Tag', dataIndex: 'inboundTag', align: 'center', width: 20, ellipsis: true },
-            { title: 'User email', dataIndex: 'user', align: 'center', width: 20, ellipsis: true }]},
-        { title: '{{ i18n "pages.xray.rules.outbound"}}', dataIndex: 'outboundTag', align: 'center', width: 20 },
+            { title: 'Inbound Tag', dataIndex: 'inboundTag', align: 'center', width: 15, ellipsis: true },
+            { title: 'Client Email', dataIndex: 'user', align: 'center', width: 20, ellipsis: true }]},
+        { title: '{{ i18n "pages.xray.rules.outbound"}}', dataIndex: 'outboundTag', align: 'center', width: 15 },
+        { title: '{{ i18n "pages.xray.rules.balancer"}}', dataIndex: 'balancerTag', align: 'center', width: 15 },
     ];
 
     const rulesMobileColumns = [
@@ -454,6 +559,7 @@
         { title: '{{ i18n "pages.xray.outbound.tag"}}', dataIndex: 'tag', align: 'center', width: 50 },
         { title: '{{ i18n "protocol"}}', align: 'center', width: 50, scopedSlots: { customRender: 'protocol' }  },
         { title: '{{ i18n "pages.xray.outbound.address"}}', align: 'center', width: 50, scopedSlots: { customRender: 'address' } },
+        { title: '{{ i18n "pages.inbounds.traffic" }}', align: 'center', width: 50, scopedSlots: { customRender: 'traffic' } },
     ];
 
     const reverseColumns = [
@@ -462,6 +568,14 @@
         { title: '{{ i18n "pages.xray.outbound.tag"}}', dataIndex: 'tag', align: 'center', width: 50 },
         { title: '{{ i18n "pages.xray.outbound.domain"}}', dataIndex: 'domain', align: 'center', width: 50 },
     ];
+
+    const balancerColumns = [
+        { title: "#", align: 'center', width: 20, scopedSlots: { customRender: 'action' } },
+        { title: '{{ i18n "pages.xray.balancer.tag"}}', dataIndex: 'tag', align: 'center', width: 50 },
+        { title: '{{ i18n "pages.xray.balancer.balancerStrategy"}}', align: 'center', width: 50, scopedSlots: { customRender: 'strategy' }},
+        { title: '{{ i18n "pages.xray.balancer.balancerSelectors"}}', align: 'center', width: 100, scopedSlots: { customRender: 'selector' }},
+    ];
+
     const app = new Vue({
         delimiters: ['[[', ']]'],
         el: '#app',
@@ -473,7 +587,9 @@
             oldXraySetting: '',
             xraySetting: '',
             inboundTags: [],
+            outboundsTraffic: [],
             saveBtnDisable: true,
+            refreshing: false,
             restartResult: '',
             isMobile: window.innerWidth <= 768,
             advSettings: 'xraySetting',
@@ -506,24 +622,13 @@
                     domainStrategy: "UseIPv4"
                 }
             },
-            warpSettings: {
-                tag: "WARP",
-                protocol: "socks",
-                settings: {
-                    servers: [
-                        {
-                            address: "127.0.0.1",
-                            port: 40000
-                        }
-                    ]
-                }
-            },
             directSettings: {
                 tag: "direct",
                 protocol: "freedom"
             },
-            outboundDomainStrategies: ["AsIs", "UseIP", "UseIPv4", "UseIPv6"],
             routingDomainStrategies: ["AsIs", "IPIfNonMatch", "IPOnDemand"],
+            logLevel: ["none" , "debug" , "info" , "warning", "error"],
+            access: ["none" , "./access.log" ],
             settingsData: {
                 protocols: {
                     bittorrent: ["bittorrent"],
@@ -533,11 +638,17 @@
                     cn: ["geoip:cn"],
                     ir: ["ext:geoip_IR.dat:ir"],
                     ru: ["geoip:ru"],
+                    vn: ["ext:geoip_VN.dat:vn"],
                 },
                 domains: {
                     ads: [
                         "geosite:category-ads-all",
                         "ext:geosite_IR.dat:category-ads-all"
+                    ],
+                    security: [
+                        "ext:geosite_IR.dat:malware",
+                        "ext:geosite_IR.dat:phishing",
+                        "ext:geosite_IR.dat:cryptominers"
                     ],
                     speedtest: ["geosite:speedtest"],
                     openai: ["geosite:openai"],
@@ -555,23 +666,34 @@
                     ir: [
                         "regexp:.*\\.ir$",
                         "regexp:.*\\.xn--mgba3a4f16a$",  // .ایران
-                        "ext:geosite_IR.dat:ir"  // have rules to bypass all .ir domains.
+                        "ext:geosite_IR.dat:ir"
+                    ],
+                    vn: [
+                        "regexp:.*\\.vn$",
+                        "ext:geosite_VN.dat:vn",
+                        "ext:geosite_VN.dat:ads"
                     ]
                 },
                 familyProtectDNS: {
                     "servers": [
                         "1.1.1.3",  // https://developers.cloudflare.com/1.1.1.1/setup/
                         "1.0.0.3",
-                        "94.140.14.15",  // https://adguard-dns.io/kb/general/dns-providers/
-                        "94.140.15.16"
+                        "2606:4700:4700::1113",
+                        "2606:4700:4700::1003"
                     ],
-                    "queryStrategy": "UseIPv4"
+                    "queryStrategy": "UseIP"
                 },
             }
         },
         methods: {
             loading(spinning = true) {
                 this.spinning = spinning;
+            },
+            async getOutboundsTraffic() {
+                const msg = await HttpUtil.get("/panel/xray/getOutboundsTraffic");
+                if (msg.success) {
+                    this.outboundsTraffic = msg.obj;
+                }
             },
             async getXraySetting() {
                 this.loading(true);
@@ -662,13 +784,13 @@
                 }
             },
             syncRulesWithOutbound(tag, setting) {
-                const newTemplateSettings = {...this.templateSettings};
+                const newTemplateSettings = this.templateSettings;
                 const haveRules = newTemplateSettings.routing.rules.some((r) => r?.outboundTag === tag);
                 const outboundIndex = newTemplateSettings.outbounds.findIndex((o) => o.tag === tag);
-                if (!haveRules && outboundIndex >= 0) {
-                    newTemplateSettings.outbounds.splice(outboundIndex, 1);
+                if (!haveRules && outboundIndex > 0) {
+                    newTemplateSettings.outbounds.splice(outboundIndex);
                 }
-                if (haveRules && outboundIndex === -1) {
+                if (haveRules && outboundIndex < 0) {
                     newTemplateSettings.outbounds.push(setting);
                 }
                 this.templateSettings = newTemplateSettings;
@@ -751,6 +873,14 @@
                 }
                 return true;
             },
+            findOutboundTraffic(o) {
+                for (const otraffic of this.outboundsTraffic) {
+                    if (otraffic.tag == o.tag) {
+                        return sizeFormat(otraffic.up) + ' / ' + sizeFormat(otraffic.down);
+                    }
+                }
+                return sizeFormat(0) + ' / ' + sizeFormat(0);
+            },
             findOutboundAddress(o) {
                 serverObj = null;
                 switch(o.protocol){
@@ -766,6 +896,8 @@
                         break;
                     case Protocols.DNS:
                         return [o.settings.address + ':' + o.settings.port];
+                        case Protocols.Wireguard:
+                        return o.settings.peers.map(peer => peer.endpoint);
                     default:
                         return null;
                 }
@@ -806,6 +938,121 @@
                 outbounds.splice(index,1);
                 this.outboundSettings = JSON.stringify(outbounds);
             },
+            async refreshOutboundTraffic() {
+                if (!this.refreshing) {
+                    this.refreshing = true;
+                    await this.getOutboundsTraffic();
+
+                    data = []
+                    if (this.templateSettings != null) {
+                        this.templateSettings.outbounds.forEach((o, index) => {
+                            data.push({'key': index, ...o});
+                        });
+                    }
+
+                    this.outboundData = data;
+                    this.refreshing = false;
+                }
+            },
+            async resetOutboundTraffic(index) {
+                let tag = "-alltags-";
+                if (index >= 0) {
+                    tag = this.outboundData[index].tag ? this.outboundData[index].tag : ""
+                }
+                const msg = await HttpUtil.post("/panel/xray/resetOutboundsTraffic", { tag: tag });
+                if (msg.success) {
+                    await this.refreshOutboundTraffic();
+                }
+            },
+            addBalancer() {
+                balancerModal.show({
+                    title: '{{ i18n "pages.xray.balancer.addBalancer"}}',
+                    okText: '{{ i18n "pages.xray.balancer.addBalancer"}}',
+                    balancerTags: this.balancersData.filter((o) => !ObjectUtil.isEmpty(o.tag)).map(obj => obj.tag),
+                    balancer: {
+                        tag: '',
+                        strategy: 'random',
+                        selector: []
+                    },
+                    confirm: (balancer) => {
+                        balancerModal.loading();
+                        newTemplateSettings = this.templateSettings;
+                        if (newTemplateSettings.routing.balancers == undefined) {
+                            newTemplateSettings.routing.balancers = [];
+                        }
+                        let tmpBalancer = {
+                            'tag': balancer.tag,
+                            'selector': balancer.selector
+                        };
+                        if (balancer.strategy == 'roundRobin') {
+                            tmpBalancer.strategy = {
+                                'type': balancer.strategy
+                            };
+                        }
+                        newTemplateSettings.routing.balancers.push(tmpBalancer);
+                        this.templateSettings = newTemplateSettings;
+                        balancerModal.close();
+                    },
+                    isEdit: false
+                });
+            },
+            editBalancer(index) {
+                const oldTag = this.balancersData[index].tag;
+                balancerModal.show({
+                    title: '{{ i18n "pages.xray.balancer.editBalancer"}}',
+                    okText: '{{ i18n "sure" }}',
+                    balancerTags: this.balancersData.filter((o) => !ObjectUtil.isEmpty(o.tag)).map(obj => obj.tag),
+                    balancer: this.balancersData[index],
+                    confirm: (balancer) => {
+                        balancerModal.loading();
+                        newTemplateSettings = this.templateSettings;
+
+                        let tmpBalancer = {
+                            'tag': balancer.tag,
+                            'selector': balancer.selector
+                        };
+                        if (balancer.strategy == 'roundRobin') {
+                            tmpBalancer.strategy = {
+                                'type': balancer.strategy
+                            };
+                        }
+
+                        newTemplateSettings.routing.balancers[index] = tmpBalancer;
+                        // change edited tag if used in rule section
+                        if (oldTag != balancer.tag) {
+                            newTemplateSettings.routing.rules.forEach((rule) => {
+                                if (rule.balancerTag && rule.balancerTag == oldTag) {
+                                    rule.balancerTag = balancer.tag;
+                                }
+                            });
+                        }
+                        this.templateSettings = newTemplateSettings;
+                        balancerModal.close();
+                    },
+                    isEdit: true
+                });
+            },
+            deleteBalancer(index) {
+                newTemplateSettings = this.templateSettings;
+
+                //remove from balancers
+                const oldTag = this.balancersData[index].tag;
+                this.balancersData.splice(index, 1);
+
+                // remove from settings
+                let realIndex = newTemplateSettings.routing.balancers.findIndex((b) => b.tag == oldTag);
+                newTemplateSettings.routing.balancers.splice(realIndex, 1);
+
+                // remove related routing rules
+                let rules = [];
+                newTemplateSettings.routing.rules.forEach((r) => {
+                    if (!r.balancerTag || r.balancerTag != oldTag) {
+                        rules.push(r);
+                    }
+                });
+                newTemplateSettings.routing.rules = rules;
+                this.templateSettings = newTemplateSettings;
+            },
             addReverse(){
                 reverseModal.show({
                     title: '{{ i18n "pages.xray.outbound.addReverse"}}',
@@ -841,17 +1088,27 @@
                     confirm: (reverse, rules) => {
                         reverseModal.loading();
                         if(reverse.tag.length > 0){
-                            oldtag = this.reverseData[index].tag;
-                            this.deleteReverse(index);
+                            oldData = this.reverseData[index];
                             newTemplateSettings = this.templateSettings;
-                            if(newTemplateSettings.reverse == undefined) newTemplateSettings.reverse = {};
-                            if(newTemplateSettings.reverse[reverse.type+'s']  == undefined) newTemplateSettings.reverse[reverse.type+'s'] = [];
-                            newTemplateSettings.reverse[reverse.type+'s'].push({ tag: reverse.tag, domain: reverse.domain });
+                            oldReverseIndex = newTemplateSettings.reverse[oldData.type+'s'].findIndex(rs => rs.tag == oldData.tag);
+                            oldRuleIndex0 = oldRules.length>0 ? newTemplateSettings.routing.rules.findIndex(r => JSON.stringify(r) == JSON.stringify(oldRules[0])) : -1;
+                            oldRuleIndex1 = oldRules.length==2 ? newTemplateSettings.routing.rules.findIndex(r => JSON.stringify(r) == JSON.stringify(oldRules[1])) : -1;
+                            if(oldData.type == reverse.type){
+                                newTemplateSettings.reverse[oldData.type + 's'][oldReverseIndex] = { tag: reverse.tag, domain: reverse.domain };
+                            } else {
+                                newTemplateSettings.reverse[oldData.type+'s'].splice(oldReverseIndex,1);
+                                // delete empty object
+                                if(newTemplateSettings.reverse[oldData.type+'s'].length == 0) Reflect.deleteProperty(newTemplateSettings.reverse, oldData.type+'s');
+                                // add other type of reverse if it is not exist
+                                if(!newTemplateSettings.reverse[reverse.type+'s']) newTemplateSettings.reverse[reverse.type+'s'] = [];
+                                newTemplateSettings.reverse[reverse.type+'s'].push({ tag: reverse.tag, domain: reverse.domain });
+                            }
                             this.templateSettings = newTemplateSettings;
 
                             // Adjust Rules
-                            newRules = this.templateSettings.routing.rules.filter(r => r.outboundTag != oldtag && (r.inboundTag && !r.inboundTag.includes(oldtag)));
-                            newRules.push(...rules)
+                            newRules = this.templateSettings.routing.rules;
+                            oldRuleIndex0 != -1 ? newRules[oldRuleIndex0] = rules[0] : newRules.push(rules[0]);
+                            oldRuleIndex1 != -1 ? newRules[oldRuleIndex1] = rules[1] : newRules.push(rules[1]);
                             this.routingRuleSettings = JSON.stringify(newRules);
                         }
                         reverseModal.close();
@@ -866,10 +1123,17 @@
                 realIndex = reverseTypeObj.findIndex(r => r.tag==oldData.tag && r.domain==oldData.domain);
                 newTemplateSettings.reverse[oldData.type+'s'].splice(realIndex,1);
 
+                // delete empty objects
                 if(reverseTypeObj.length == 0) Reflect.deleteProperty(newTemplateSettings.reverse, oldData.type+'s');
                 if(Object.keys(newTemplateSettings.reverse).length === 0) Reflect.deleteProperty(newTemplateSettings, 'reverse');
 
-                newRules = newTemplateSettings.routing.rules.filter(r => r.outboundTag != oldData.tag && (r.inboundTag && !r.inboundTag.includes(oldData.tag)));
+                // delete related routing rules
+                newRules = newTemplateSettings.routing.rules;
+                if(oldData.type == "bridge"){
+                    newRules = newTemplateSettings.routing.rules.filter(r => !( r.inboundTag && r.inboundTag.length == 1 && r.inboundTag[0] == oldData.tag));
+                } else if(oldData.type == "portal"){
+                    newRules = newTemplateSettings.routing.rules.filter(r => r.outboundTag != oldData.tag);
+                }
                 newTemplateSettings.routing.rules = newRules;
                 
                 this.templateSettings = newTemplateSettings;
@@ -914,13 +1178,17 @@
                 rules = this.templateSettings.routing.rules;
                 rules.splice(index,1);
                 this.routingRuleSettings = JSON.stringify(rules);
+            },
+            showWarp(){
+                warpModal.show();
             }
         },
         async mounted() {
             await this.getXraySetting();
             await this.getXrayResult();
+            await this.getOutboundsTraffic();
             while (true) {
-                await PromiseUtil.sleep(600);
+                await PromiseUtil.sleep(800);
                 this.saveBtnDisable = this.oldXraySetting === this.xraySetting;
             }
         },
@@ -973,6 +1241,27 @@
                     }
                     return data;
                 },
+            },
+            balancersData: {
+                get: function () {
+                    data = []
+                    if (this.templateSettings != null && this.templateSettings.routing != null && this.templateSettings.routing.balancers != null) {
+                        this.templateSettings.routing.balancers.forEach((o, index) => {
+                            let strategy = "random"
+                            if (o.strategy && o.strategy.type == "roundRobin") {
+                                strategy = o.strategy.type
+                            }
+
+                            data.push({ 
+                                'key': index,
+                                'tag': o.tag ? o.tag : "",
+                                'strategy': strategy,
+                                'selector': o.selector ? o.selector : []
+                            });
+                        });
+                    }
+                    return data;
+                }
             },
             routingRuleSettings: {
                 get: function () { return this.templateSettings ? JSON.stringify(this.templateSettings.routing.rules, null, 2) : null; },
@@ -1035,6 +1324,28 @@
                     this.templateSettings = newTemplateSettings;
                 }
             },
+            setLogLevel: {
+                get: function () {
+                    if (!this.templateSettings || !this.templateSettings.log || !this.templateSettings.log.loglevel) return "warning";
+                    return this.templateSettings.log.loglevel;
+                },
+                set: function (newValue) {
+                    newTemplateSettings = this.templateSettings;
+                    newTemplateSettings.log.loglevel = newValue;
+                    this.templateSettings = newTemplateSettings;
+                }
+            },
+            setAccessLog: {
+                get: function () {
+                    if (!this.templateSettings || !this.templateSettings.log || !this.templateSettings.log.access) return "none";
+                    return this.templateSettings.log.access;
+                },
+                set: function (newValue) {
+                    newTemplateSettings = this.templateSettings;
+                    newTemplateSettings.log.access = newValue;
+                    this.templateSettings = newTemplateSettings;
+                }
+            },
             blockedIPs: {
                 get: function () {
                     return this.templateRuleGetter({ outboundTag: "blocked", property: "ip" });
@@ -1088,36 +1399,11 @@
             },
             warpDomains: {
                 get: function () {
-                    return this.templateRuleGetter({ outboundTag: "WARP", property: "domain" });
+                    return this.templateRuleGetter({ outboundTag: "warp", property: "domain" });
                 },
                 set: function (newValue) {
-                    this.templateRuleSetter({ outboundTag: "WARP", property: "domain", data: newValue });
-                    this.syncRulesWithOutbound("WARP", this.warpSettings);
+                    this.templateRuleSetter({ outboundTag: "warp", property: "domain", data: newValue });
                 }
-            },
-            manualBlockedIPs: {
-                get: function () { return JSON.stringify(this.blockedIPs, null, 2); },
-                set: debounce(function (value) { this.blockedIPs = JSON.parse(value); }, 1000)
-            },
-            manualBlockedDomains: {
-                get: function () { return JSON.stringify(this.blockedDomains, null, 2); },
-                set: debounce(function (value) { this.blockedDomains = JSON.parse(value); }, 1000)
-            },
-            manualDirectIPs: {
-                get: function () { return JSON.stringify(this.directIPs, null, 2); },
-                set: debounce(function (value) { this.directIPs = JSON.parse(value); }, 1000)
-            },
-            manualDirectDomains: {
-                get: function () { return JSON.stringify(this.directDomains, null, 2); },
-                set: debounce(function (value) { this.directDomains = JSON.parse(value); }, 1000)
-            },
-            manualIPv4Domains: {
-                get: function () { return JSON.stringify(this.ipv4Domains, null, 2); },
-                set: debounce(function (value) { this.ipv4Domains = JSON.parse(value); }, 1000)
-            },
-            manualWARPDomains: {
-                get: function () { return JSON.stringify(this.warpDomains, null, 2); },
-                set: debounce(function (value) { this.warpDomains = JSON.parse(value); }, 1000)
             },
             torrentSettings: {
                 get: function () {
@@ -1152,6 +1438,18 @@
                         this.blockedDomains = [...this.blockedDomains, ...this.settingsData.domains.ads];
                     } else {
                         this.blockedDomains = this.blockedDomains.filter(data => !this.settingsData.domains.ads.includes(data));
+                    }
+                },
+            },
+            SecuritySettings: {
+                get: function () {
+                    return doAllItemsExist(this.settingsData.domains.security, this.blockedDomains);
+                },
+                set: function (newValue) {
+                    if (newValue) {
+                        this.blockedDomains = [...this.blockedDomains, ...this.settingsData.domains.security];
+                    } else {
+                        this.blockedDomains = this.blockedDomains.filter(data => !this.settingsData.domains.security.includes(data));
                     }
                 },
             },
@@ -1278,6 +1576,30 @@
                     }
                 }
             },
+            VNIpSettings: {
+                get: function () {
+                    return doAllItemsExist(this.settingsData.ips.vn, this.blockedIPs);
+                },
+                set: function (newValue) {
+                    if (newValue) {
+                        this.blockedIPs = [...this.blockedIPs, ...this.settingsData.ips.vn];
+                    } else {
+                        this.blockedIPs = this.blockedIPs.filter(data => !this.settingsData.ips.vn.includes(data));
+                    }
+                }
+            },
+            VNDomainSettings: {
+                get: function () {
+                    return doAllItemsExist(this.settingsData.domains.vn, this.blockedDomains);
+                },
+                set: function (newValue) {
+                    if (newValue) {
+                        this.blockedDomains = [...this.blockedDomains, ...this.settingsData.domains.vn];
+                    } else {
+                        this.blockedDomains = this.blockedDomains.filter(data => !this.settingsData.domains.vn.includes(data));
+                    }
+                }
+            },
             IRIpDirectSettings: {
                 get: function () {
                     return doAllItemsExist(this.settingsData.ips.ir, this.directIPs);
@@ -1349,6 +1671,35 @@
                         this.directDomains = this.directDomains.filter(data => !this.settingsData.domains.ru.includes(data));
                     }
                 }
+            },
+            VNIpDirectSettings: {
+                get: function () {
+                    return doAllItemsExist(this.settingsData.ips.vn, this.directIPs);
+                },
+                set: function (newValue) {
+                    if (newValue) {
+                        this.directIPs = [...this.directIPs, ...this.settingsData.ips.vn];
+                    } else {
+                        this.directIPs = this.directIPs.filter(data => !this.settingsData.ips.vn.includes(data));
+                    }
+                }
+            },
+            VNDomainDirectSettings: {
+                get: function () {
+                    return doAllItemsExist(this.settingsData.domains.vn, this.directDomains);
+                },
+                set: function (newValue) {
+                    if (newValue) {
+                        this.directDomains = [...this.directDomains, ...this.settingsData.domains.vn];
+                    } else {
+                        this.directDomains = this.directDomains.filter(data => !this.settingsData.domains.vn.includes(data));
+                    }
+                }
+            },
+            WarpExist: {
+                get: function() {
+                    return this.templateSettings ? this.templateSettings.outbounds.findIndex((o) => o.tag == "warp")>=0  : false;
+                },
             },
             GoogleWARPSettings: {
                 get: function () {

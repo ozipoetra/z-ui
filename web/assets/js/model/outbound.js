@@ -8,6 +8,7 @@ const Protocols = {
     Shadowsocks: "shadowsocks",
     Socks: "socks",
     HTTP: "http",
+    Wireguard: "wireguard"
 };
 
 const SSMethods = {
@@ -46,18 +47,27 @@ const ALPN_OPTION = {
     HTTP1: "http/1.1",
 };
 
-const outboundDomainStrategies = [
+const OutboundDomainStrategies = [
     "AsIs",
     "UseIP",
     "UseIPv4",
     "UseIPv6"
-]
+];
+
+const WireguardDomainStrategy = [
+    "ForceIP",
+    "ForceIPv4",
+    "ForceIPv4v6",
+    "ForceIPv6",
+    "ForceIPv6v4"
+];
 
 Object.freeze(Protocols);
 Object.freeze(SSMethods);
 Object.freeze(TLS_FLOW_CONTROL);
 Object.freeze(ALPN_OPTION);
-Object.freeze(outboundDomainStrategies);
+Object.freeze(OutboundDomainStrategies);
+Object.freeze(WireguardDomainStrategy);
 
 class CommonClass {
 
@@ -625,6 +635,7 @@ Outbound.Settings = class extends CommonClass {
             case Protocols.Shadowsocks: return new Outbound.ShadowsocksSettings();
             case Protocols.Socks: return new Outbound.SocksSettings();
             case Protocols.HTTP: return new Outbound.HttpSettings();
+            case Protocols.Wireguard: return new Outbound.WireguardSettings();
             default: return null;
         }
     }
@@ -640,6 +651,7 @@ Outbound.Settings = class extends CommonClass {
             case Protocols.Shadowsocks: return Outbound.ShadowsocksSettings.fromJson(json);
             case Protocols.Socks: return Outbound.SocksSettings.fromJson(json);
             case Protocols.HTTP: return Outbound.HttpSettings.fromJson(json);
+            case Protocols.Wireguard: return Outbound.WireguardSettings.fromJson(json);
             default: return null;
         }
     }
@@ -838,23 +850,24 @@ Outbound.ShadowsocksSettings = class extends CommonClass {
         };
     }
 };
+
 Outbound.SocksSettings = class extends CommonClass {
-    constructor(address, port, user, password) {
+    constructor(address, port, user, pass) {
         super();
         this.address = address;
         this.port = port;
         this.user = user;
-        this.password = password;
+        this.pass = pass;
     }
 
     static fromJson(json={}) {
-        servers = json.servers;
+        let servers = json.servers;
         if(ObjectUtil.isArrEmpty(servers)) servers=[{users: [{}]}];
         return new Outbound.SocksSettings(
             servers[0].address,
             servers[0].port,
             ObjectUtil.isArrEmpty(servers[0].users) ? '' : servers[0].users[0].user,
-            ObjectUtil.isArrEmpty(servers[0].password) ? '' : servers[0].users[0].password,
+            ObjectUtil.isArrEmpty(servers[0].users) ? '' : servers[0].users[0].pass,
         );
     }
 
@@ -863,28 +876,28 @@ Outbound.SocksSettings = class extends CommonClass {
             servers: [{
                 address: this.address,
                 port: this.port,
-                users: ObjectUtil.isEmpty(this.user) ? [] : [{user: this.user, password: this.password}],
+                users: ObjectUtil.isEmpty(this.user) ? [] : [{user: this.user, pass: this.pass}],
             }],
         };
     }
 };
 Outbound.HttpSettings = class extends CommonClass {
-    constructor(address, port, user, password) {
+    constructor(address, port, user, pass) {
         super();
         this.address = address;
         this.port = port;
         this.user = user;
-        this.password = password;
+        this.pass = pass;
     }
 
     static fromJson(json={}) {
-        servers = json.servers;
+        let servers = json.servers;
         if(ObjectUtil.isArrEmpty(servers)) servers=[{users: [{}]}];
         return new Outbound.HttpSettings(
             servers[0].address,
             servers[0].port,
             ObjectUtil.isArrEmpty(servers[0].users) ? '' : servers[0].users[0].user,
-            ObjectUtil.isArrEmpty(servers[0].password) ? '' : servers[0].users[0].password,
+            ObjectUtil.isArrEmpty(servers[0].users) ? '' : servers[0].users[0].pass,
         );
     }
 
@@ -893,8 +906,91 @@ Outbound.HttpSettings = class extends CommonClass {
             servers: [{
                 address: this.address,
                 port: this.port,
-                users: ObjectUtil.isEmpty(this.user) ? [] : [{user: this.user, password: this.password}],
+                users: ObjectUtil.isEmpty(this.user) ? [] : [{user: this.user, pass: this.pass}],
             }],
+        };
+    }
+};
+
+Outbound.WireguardSettings = class extends CommonClass {
+    constructor(
+            mtu=1420, secretKey='',
+            address=[''], workers=2, domainStrategy='', reserved='',
+            peers=[new Outbound.WireguardSettings.Peer()], kernelMode=false) {
+        super();
+        this.mtu = mtu;
+        this.secretKey = secretKey;
+        this.pubKey = secretKey.length>0 ? Wireguard.generateKeypair(secretKey).publicKey : '';
+        this.address = address instanceof Array ? address.join(',') : address;
+        this.workers = workers;
+        this.domainStrategy = domainStrategy;
+        this.reserved = reserved instanceof Array ? reserved.join(',') : reserved;
+        this.peers = peers;
+        this.kernelMode = kernelMode;
+    }
+
+    addPeer() {
+        this.peers.push(new Outbound.WireguardSettings.Peer());
+    }
+
+    delPeer(index) {
+        this.peers.splice(index, 1);
+    }
+
+    static fromJson(json={}){
+        return new Outbound.WireguardSettings(
+            json.mtu,
+            json.secretKey,
+            json.address,
+            json.workers,
+            json.domainStrategy,
+            json.reserved,
+            json.peers.map(peer => Outbound.WireguardSettings.Peer.fromJson(peer)),
+            json.kernelMode,
+        );
+    }
+
+    toJson() {
+        return {
+            mtu: this.mtu?? undefined,
+            secretKey: this.secretKey,
+            address: this.address ? this.address.split(",") : [],
+            workers: this.workers?? undefined,
+            domainStrategy: WireguardDomainStrategy.includes(this.domainStrategy) ? this.domainStrategy : undefined,
+            reserved: this.reserved ? this.reserved.split(",") : undefined,
+            peers: Outbound.WireguardSettings.Peer.toJsonArray(this.peers),
+            kernelMode: this.kernelMode,
+        };
+    }
+};
+
+Outbound.WireguardSettings.Peer = class extends CommonClass {
+    constructor(publicKey='', psk='', allowedIPs=['0.0.0.0/0','::/0'], endpoint='', keepAlive=0) {
+        super();
+        this.publicKey = publicKey;
+        this.psk = psk;
+        this.allowedIPs = allowedIPs;
+        this.endpoint = endpoint;
+        this.keepAlive = keepAlive;
+    }
+
+    static fromJson(json={}){
+        return new Outbound.WireguardSettings.Peer(
+            json.publicKey,
+            json.preSharedKey,
+            json.allowedIPs,
+            json.endpoint,
+            json.keepAlive
+        );
+    }
+
+    toJson() {
+        return {
+            publicKey: this.publicKey,
+            preSharedKey: this.psk.length>0 ? this.psk : undefined,
+            allowedIPs: this.allowedIPs ? this.allowedIPs : undefined,
+            endpoint: this.endpoint,
+            keepAlive: this.keepAlive?? undefined,
         };
     }
 };

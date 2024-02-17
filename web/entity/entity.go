@@ -28,6 +28,7 @@ type AllSetting struct {
 	RemarkModel      string `json:"remarkModel" form:"remarkModel"`
 	TgBotEnable      bool   `json:"tgBotEnable" form:"tgBotEnable"`
 	TgBotToken       string `json:"tgBotToken" form:"tgBotToken"`
+	TgBotProxy       string `json:"tgBotProxy" form:"tgBotProxy"`
 	TgBotChatId      string `json:"tgBotChatId" form:"tgBotChatId"`
 	TgRunTime        string `json:"tgRunTime" form:"tgRunTime"`
 	TgBotBackup      bool   `json:"tgBotBackup" form:"tgBotBackup"`
@@ -47,6 +48,7 @@ type AllSetting struct {
 	SubEncrypt       bool   `json:"subEncrypt" form:"subEncrypt"`
 	SubShowInfo      bool   `json:"subShowInfo" form:"subShowInfo"`
 	SubURI           string `json:"subURI" form:"subURI"`
+	Datepicker       string `json:"datepicker" form:"datepicker"`
 }
 
 func (s *AllSetting) CheckValid() error {
@@ -72,8 +74,8 @@ func (s *AllSetting) CheckValid() error {
 		return common.NewError("Sub port is not a valid port:", s.SubPort)
 	}
 
-	if s.SubPort == s.WebPort {
-		return common.NewError("Sub and Web could not use same port:", s.SubPort)
+	if (s.SubPort == s.WebPort) && (s.WebListen == s.SubListen) {
+		return common.NewError("Sub and Web could not use same ip:port, ", s.SubListen, ":", s.SubPort, " & ", s.WebListen, ":", s.WebPort)
 	}
 
 	if s.WebCertFile != "" || s.WebKeyFile != "" {

@@ -20,13 +20,18 @@ func (lw *LogWriter) Write(m []byte) (n int, err error) {
 	lw.lastLine = messages[len(messages)-1]
 
 	for _, msg := range messages {
+		messageBody := msg
+
 		// Remove timestamp
-		messageBody := strings.TrimSpace(strings.SplitN(msg, " ", 3)[2])
+		splittedMsg := strings.SplitN(msg, " ", 3)
+		if len(splittedMsg) > 2 {
+			messageBody = strings.TrimSpace(strings.SplitN(msg, " ", 3)[2])
+		}
 
 		// Find level in []
 		startIndex := strings.Index(messageBody, "[")
 		endIndex := strings.Index(messageBody, "]")
-		if startIndex != -1 && endIndex != -1 {
+		if startIndex != -1 && endIndex != -1 && startIndex < endIndex {
 			level := strings.TrimSpace(messageBody[startIndex+1 : endIndex])
 			msgBody := "XRAY: " + strings.TrimSpace(messageBody[endIndex+1:])
 

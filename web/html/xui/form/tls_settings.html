@@ -1,7 +1,7 @@
 {{define "form/tlsSettings"}}
 <!-- tls enable -->
 <a-form v-if="inbound.canEnableTls()" :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
-    <a-divider style="margin:0;"></a-divider>
+    <a-divider style="margin:3px 0;"></a-divider>
     <a-form-item label='{{ i18n "security" }}'>
         <a-radio-group v-model="inbound.stream.security" button-style="solid">
             <a-radio-button value="none">{{ i18n "none" }}</a-radio-button>
@@ -15,7 +15,7 @@
                 <template slot="title">
                     <span>{{ i18n "pages.inbounds.realityDesc" }}</span>
                 </template>
-                <a-radio-button v-if="inbound.canEnableReality()" value="reality">Reality</a-radio-button>
+                <a-radio-button v-if="inbound.canEnableReality()" value="reality">REALITY</a-radio-button>
             </a-tooltip>
             <a-radio-button value="tls">TLS</a-radio-button>
         </a-radio-group>
@@ -26,9 +26,9 @@
         <a-form-item label="SNI" placeholder="Server Name Indication">
             <a-input v-model.trim="inbound.stream.tls.sni"></a-input>
         </a-form-item>
-        <a-form-item label="CipherSuites">
+        <a-form-item label="Cipher Suites">
             <a-select v-model="inbound.stream.tls.cipherSuites" :dropdown-class-name="themeSwitcher.currentTheme">
-                <a-select-option value="">auto</a-select-option>
+                <a-select-option value="">Auto</a-select-option>
                 <a-select-option v-for="key,value in TLS_CIPHER_OPTION" :value="key">[[ value ]]</a-select-option>
             </a-select>
         </a-form-item>
@@ -55,7 +55,7 @@
                 <a-select-option v-for="alpn in ALPN_OPTION" :value="alpn">[[ alpn ]]</a-select-option>
             </a-select>
         </a-form-item>
-        <a-form-item label="Allow insecure">
+        <a-form-item label="Allow Insecure">
             <a-switch v-model="inbound.stream.tls.settings.allowInsecure"></a-switch>
         </a-form-item>
         <a-form-item label="Reject Unknown SNI">
@@ -74,10 +74,10 @@
             </a-form-item>
             <template v-if="cert.useFile">
                 <a-form-item label='{{ i18n "pages.inbounds.publicKeyPath" }}'>
-                    <a-input v-model.trim="cert.certFile" style="width:250px;"></a-input>
+                    <a-input v-model.trim="cert.certFile"></a-input>
                 </a-form-item>
                 <a-form-item label='{{ i18n "pages.inbounds.keyPath" }}'>
-                    <a-input v-model.trim="cert.keyFile" style="width:250px;"></a-input>
+                    <a-input v-model.trim="cert.keyFile"></a-input>
                 </a-form-item>
                 <a-form-item label=" ">
                     <a-button type="primary" icon="import" @click="setDefaultCertData(index)">{{ i18n
@@ -86,13 +86,13 @@
             </template>
             <template v-else>
                 <a-form-item label='{{ i18n "pages.inbounds.publicKeyContent" }}'>
-                    <a-input type="textarea" :rows="3" style="width:250px;" v-model="cert.cert"></a-input>
+                    <a-input type="textarea" :rows="3" v-model="cert.cert"></a-input>
                 </a-form-item>
                 <a-form-item label='{{ i18n "pages.inbounds.keyContent" }}'>
-                    <a-input type="textarea" :rows="3" style="width:250px;" v-model="cert.key"></a-input>
+                    <a-input type="textarea" :rows="3" v-model="cert.key"></a-input>
                 </a-form-item>
             </template>
-            <a-form-item label='ocspStapling'>
+            <a-form-item label='OCSP stapling'>
                 <a-input-number v-model.number="cert.ocspStapling" :min="0"></a-input-number>
             </a-form-item>
         </template>
@@ -109,7 +109,7 @@
                 <a-select-option v-for="alpn in ALPN_OPTION" :value="alpn">[[ alpn ]]</a-select-option>
             </a-select>
         </a-form-item>
-        <a-form-item label="Allow insecure">
+        <a-form-item label="Allow Insecure">
             <a-switch v-model="inbound.stream.xtls.settings.allowInsecure"></a-switch>
         </a-form-item>
         <template v-for="cert,index in inbound.stream.xtls.certs">
@@ -125,10 +125,10 @@
             </a-form-item>
             <template v-if="cert.useFile">
                 <a-form-item label='{{ i18n "pages.inbounds.publicKeyPath" }}'>
-                    <a-input v-model.trim="cert.certFile" style="width:250px;"></a-input>
+                    <a-input v-model.trim="cert.certFile"></a-input>
                 </a-form-item>
                 <a-form-item label='{{ i18n "pages.inbounds.keyPath" }}'>
-                    <a-input v-model.trim="cert.keyFile" style="width:250px;"></a-input>
+                    <a-input v-model.trim="cert.keyFile"></a-input>
                 </a-form-item>
                 <a-form-item label=" ">
                     <a-button type="primary" icon="import" @click="setDefaultCertXtls(index)">{{ i18n
@@ -137,10 +137,10 @@
             </template>
             <template v-else>
                 <a-form-item label='{{ i18n "pages.inbounds.publicKeyContent" }}'>
-                    <a-input type="textarea" :rows="3" style="width:250px;" v-model="cert.cert"></a-input>
+                    <a-input type="textarea" :rows="3" v-model="cert.cert"></a-input>
                 </a-form-item>
                 <a-form-item label='{{ i18n "pages.inbounds.keyContent" }}'>
-                    <a-input type="textarea" :rows="3" style="width:250px;" v-model="cert.key"></a-input>
+                    <a-input type="textarea" :rows="3" v-model="cert.key"></a-input>
                 </a-form-item>
             </template>
         </template>
@@ -162,23 +162,23 @@
         <a-form-item label='Dest'>
             <a-input v-model.trim="inbound.stream.reality.dest"></a-input>
         </a-form-item>
-        <a-form-item label='Server Names'>
+        <a-form-item label='SNI'>
             <a-input v-model.trim="inbound.stream.reality.serverNames"></a-input>
         </a-form-item>
         <a-form-item>
             <template slot="label">
                 <a-tooltip>
                     <template slot="title">
-                        <span>{{ i18n "pages.client.renew" }}</span>
+                        <span>{{ i18n "reset" }}</span>
                     </template>
-                    Short Ids
+                    Short ID
                     <a-icon @click="inbound.stream.reality.shortIds = RandomUtil.randomShortId()" type="sync"> </a-icon>
                     </a-icon>
             </template>
-            <a-input v-model.trim="inbound.stream.reality.shortIds" style="width:250px"></a-input>
+            <a-input v-model.trim="inbound.stream.reality.shortIds"></a-input>
         </a-form-item>
         <a-form-item label='SpiderX'>
-            <a-input v-model.trim="inbound.stream.reality.settings.spiderX" style="width:250px"></a-input>
+            <a-input v-model.trim="inbound.stream.reality.settings.spiderX"></a-input>
         </a-form-item>
         <a-form-item label='Private Key'>
             <a-input v-model.trim="inbound.stream.reality.privateKey"></a-input>
@@ -187,7 +187,7 @@
             <a-input v-model.trim="inbound.stream.reality.settings.publicKey"></a-input>
         </a-form-item>
         <a-form-item label=" ">
-            <a-button type="primary" icon="import" @click="getNewX25519Cert">Get new cert</a-button>
+            <a-button type="primary" icon="import" @click="getNewX25519Cert">Get New Cert</a-button>
         </a-form-item>
     </template>
 </a-form>

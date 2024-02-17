@@ -38,6 +38,7 @@ var defaultValueMap = map[string]string{
 	"timeLocation":       "Asia/Tehran",
 	"tgBotEnable":        "false",
 	"tgBotToken":         "",
+	"tgBotProxy":         "",
 	"tgBotChatId":        "",
 	"tgRunTime":          "@daily",
 	"tgBotBackup":        "false",
@@ -56,6 +57,8 @@ var defaultValueMap = map[string]string{
 	"subEncrypt":         "true",
 	"subShowInfo":        "true",
 	"subURI":             "",
+	"datepicker":         "gregorian",
+	"warp":               "",
 }
 
 type SettingService struct {
@@ -244,6 +247,14 @@ func (s *SettingService) SetTgBotToken(token string) error {
 	return s.setString("tgBotToken", token)
 }
 
+func (s *SettingService) GetTgBotProxy() (string, error) {
+	return s.getString("tgBotProxy")
+}
+
+func (s *SettingService) SetTgBotProxy(token string) error {
+	return s.setString("tgBotProxy", token)
+}
+
 func (s *SettingService) GetTgBotChatId() (string, error) {
 	return s.getString("tgBotChatId")
 }
@@ -413,12 +424,23 @@ func (s *SettingService) GetSubShowInfo() (bool, error) {
 	return s.getBool("subShowInfo")
 }
 
+func (s *SettingService) GetPageSize() (int, error) {
+	return s.getInt("pageSize")
+}
+
 func (s *SettingService) GetSubURI() (string, error) {
 	return s.getString("subURI")
 }
 
-func (s *SettingService) GetPageSize() (int, error) {
-	return s.getInt("pageSize")
+func (s *SettingService) GetDatepicker() (string, error) {
+	return s.getString("datepicker")
+}
+
+func (s *SettingService) GetWarp() (string, error) {
+	return s.getString("warp")
+}
+func (s *SettingService) SetWarp(data string) error {
+	return s.setString("warp", data)
 }
 
 func (s *SettingService) UpdateAllSetting(allSetting *entity.AllSetting) error {
@@ -463,6 +485,7 @@ func (s *SettingService) GetDefaultSettings(host string) (interface{}, error) {
 		"subEnable":   func() (interface{}, error) { return s.GetSubEnable() },
 		"subURI":      func() (interface{}, error) { return s.GetSubURI() },
 		"remarkModel": func() (interface{}, error) { return s.GetRemarkModel() },
+		"datepicker":  func() (interface{}, error) { return s.GetDatepicker() },
 	}
 
 	result := make(map[string]interface{})

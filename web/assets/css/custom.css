@@ -18,6 +18,7 @@ body {
 html {
     --antd-wave-shadow-color: #008771;
     line-height: 1.15;
+    text-size-adjust: 100%;
     -webkit-text-size-adjust: 100%;
     -ms-text-size-adjust: 100%;
     -ms-overflow-style: scrollbar;
@@ -680,7 +681,7 @@ style attribute {
 .dark .ant-table-row-expand-icon {
     color: #fff;
     background-color: #fff0;
-    border-color: #9ea2a8;
+    border-color: rgb(255 255 255 / 20%);
 }
 
 .dark .ant-table-row-expand-icon:hover {
@@ -850,13 +851,17 @@ style attribute {
 .ant-menu,
 .ant-radio-button-wrapper {
     user-select: none;
+    -webkit-user-select: none;
 }
 
 .ant-calendar-date,
 .ant-calendar-year-panel-year,
 .ant-calendar-decade-panel-decade,
-.ant-calendar-month-panel-month {
-    border-radius: 5px;
+.ant-calendar-month-panel-month,
+.ant-checkbox-inner,
+.ant-checkbox-checked:after,
+.ant-table-row-expand-icon {
+    border-radius: 6px;
 }
 
 .ant-calendar-date:hover {
@@ -1095,7 +1100,24 @@ li.ant-select-dropdown-menu-item:empty:after {
     background-color: #313f5a;
 }
 
+.ant-select-dropdown,
+.ant-popover-inner {
+    overflow-x: hidden;
+}
 .ant-popover-inner-content {
     max-height: 400px;
     overflow-y: auto;
+}
+
+.qr-bg {
+    background-color: #fff;
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    padding: 0.5rem;
+    border-radius: 1rem;
+}
+
+.ant-input-group-addon:not(:first-child):not(:last-child), .ant-input-group-wrap:not(:first-child):not(:last-child), .ant-input-group>.ant-input:not(:first-child):not(:last-child) {
+    border-radius: 0rem 1rem 1rem 0rem;
 }

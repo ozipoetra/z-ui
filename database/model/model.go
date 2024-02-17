@@ -37,13 +37,22 @@ type Inbound struct {
 
 	// config part
 	Listen         string   `json:"listen" form:"listen"`
-	Port           int      `json:"port" form:"port" gorm:"unique"`
+	Port           int      `json:"port" form:"port"`
 	Protocol       Protocol `json:"protocol" form:"protocol"`
 	Settings       string   `json:"settings" form:"settings"`
 	StreamSettings string   `json:"streamSettings" form:"streamSettings"`
 	Tag            string   `json:"tag" form:"tag" gorm:"unique"`
 	Sniffing       string   `json:"sniffing" form:"sniffing"`
 }
+
+type OutboundTraffics struct {
+	Id    int    `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`
+	Tag   string `json:"tag" form:"tag" gorm:"unique"`
+	Up    int64  `json:"up" form:"up" gorm:"default:0"`
+	Down  int64  `json:"down" form:"down" gorm:"default:0"`
+	Total int64  `json:"total" form:"total" gorm:"default:0"`
+}
+
 type InboundClientIps struct {
 	Id          int    `json:"id" gorm:"primaryKey;autoIncrement"`
 	ClientEmail string `json:"clientEmail" form:"clientEmail" gorm:"unique"`

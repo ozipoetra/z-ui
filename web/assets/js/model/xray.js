@@ -6,6 +6,7 @@ const Protocols = {
     DOKODEMO: 'dokodemo-door',
     SOCKS: 'socks',
     HTTP: 'http',
+    WIREGUARD: 'wireguard',
 };
 
 const SSMethods = {
@@ -235,6 +236,7 @@ TcpStreamSettings.TcpRequest = class extends XrayCommonClass {
 
     toJson() {
         return {
+            version: this.version,
             method: this.method,
             path: ObjectUtil.clone(this.path),
             headers: XrayCommonClass.toV2Headers(this.headers),
@@ -474,7 +476,7 @@ class TlsStreamSettings extends XrayCommonClass {
                 cipherSuites = '',
                 rejectUnknownSni = false,
                 certificates=[new TlsStreamSettings.Cert()],
-                alpn=[ALPN_OPTION.HTTP1,ALPN_OPTION.H2],
+                alpn=[ALPN_OPTION.H2,ALPN_OPTION.HTTP1],
                 settings=new TlsStreamSettings.Settings()) {
         super();
         this.sni = serverName;
@@ -764,16 +766,18 @@ class RealityStreamSettings extends XrayCommonClass {
 }
 
 RealityStreamSettings.Settings = class extends XrayCommonClass {
-    constructor(publicKey = '', fingerprint = UTLS_FINGERPRINT.UTLS_FIREFOX, spiderX= '/') {
+    constructor(publicKey = '', fingerprint = UTLS_FINGERPRINT.UTLS_FIREFOX, serverName = '', spiderX= '/') {
         super();
         this.publicKey = publicKey;
         this.fingerprint = fingerprint;
+        this.serverName = serverName;
         this.spiderX = spiderX;
     }
     static fromJson(json = {}) {
         return new RealityStreamSettings.Settings(
             json.publicKey,
             json.fingerprint,
+            json.serverName,
             json.spiderX,
         );
     }
@@ -781,6 +785,7 @@ RealityStreamSettings.Settings = class extends XrayCommonClass {
         return {
             publicKey: this.publicKey,
             fingerprint: this.fingerprint,
+            serverName: this.serverName,
             spiderX: this.spiderX,
         };
     }
@@ -794,6 +799,7 @@ class SockoptStreamSettings extends XrayCommonClass {
         this.mark = mark;
         this.tproxy = tproxy;
     }
+    
     static fromJson(json = {}) {
         if (Object.keys(json).length === 0) return undefined;
         return new SockoptStreamSettings(
@@ -995,18 +1001,6 @@ class Inbound extends XrayCommonClass {
         }
     }
 
-    get tls() {
-        return this.stream.security === 'tls';
-    }
-
-    set tls(isTls) {
-        if (isTls) {
-            this.stream.security = 'tls';
-        } else {
-            this.stream.security = 'none';
-        }
-    }
-
     get xtls() {
         return this.stream.security === 'xtls';
     }
@@ -1018,19 +1012,7 @@ class Inbound extends XrayCommonClass {
             this.stream.security = 'none';
         }
     }
-
-    get reality() {
-        return this.stream.security === 'reality';
-    }
-
-    set reality(isReality) {
-        if (isReality) {
-            this.stream.security = 'reality';
-        } else {
-            this.stream.security = 'none';
-        }
-    }
-
+    
     get network() {
         return this.stream.network;
     }
@@ -1142,17 +1124,17 @@ class Inbound extends XrayCommonClass {
         return ["tcp", "ws", "http", "quic", "grpc"].includes(this.network);
     }
 
-    canEnableReality() {
-        if(![Protocols.VLESS, Protocols.TROJAN].includes(this.protocol)) return false;
-        return ["tcp", "http", "grpc"].includes(this.network);
-    }
-
     //this is used for xtls-rprx-vision
     canEnableTlsFlow() {
         if (((this.stream.security === 'tls') || (this.stream.security === 'reality')) && (this.network === "tcp")) {
             return this.protocol === Protocols.VLESS;
         }
         return false;
+    }
+
+    canEnableReality() {
+        if(![Protocols.VLESS, Protocols.TROJAN].includes(this.protocol)) return false;
+        return ["tcp", "http", "grpc"].includes(this.network);
     }
 
     canEnableXtls() {
@@ -1607,7 +1589,7 @@ class Inbound extends XrayCommonClass {
             });
             return links.join('\r\n');
         } else {
-            if(this.protocol == Protocols.SHADOWSOCKS && !this.isSSMultiUser) return this.genSSLink(this.listen, this.port, remark);
+            if(this.protocol == Protocols.SHADOWSOCKS && !this.isSSMultiUser) return this.genSSLink(this.listen, this.port, 'same', remark);
             return '';
         }
     }
@@ -1657,7 +1639,8 @@ Inbound.Settings = class extends XrayCommonClass {
             case Protocols.SHADOWSOCKS: return new Inbound.ShadowsocksSettings(protocol);
             case Protocols.DOKODEMO: return new Inbound.DokodemoSettings(protocol);
             case Protocols.SOCKS: return new Inbound.SocksSettings(protocol);
-            case Protocols.HTTP: return new Inbound.HttpSettings(protocol);
+            case Protocols.HTTP: return new Inbound.HttpSettings(protocol);            
+            case Protocols.WIREGUARD: return new Inbound.WireguardSettings(protocol);
             default: return null;
         }
     }
@@ -1671,6 +1654,7 @@ Inbound.Settings = class extends XrayCommonClass {
             case Protocols.DOKODEMO: return Inbound.DokodemoSettings.fromJson(json);
             case Protocols.SOCKS: return Inbound.SocksSettings.fromJson(json);
             case Protocols.HTTP: return Inbound.HttpSettings.fromJson(json);
+            case Protocols.WIREGUARD: return Inbound.WireguardSettings.fromJson(json);
             default: return null;
         }
     }
@@ -2271,5 +2255,71 @@ Inbound.HttpSettings.HttpAccount = class extends XrayCommonClass {
 
     static fromJson(json={}) {
         return new Inbound.HttpSettings.HttpAccount(json.user, json.pass);
+    }
+};
+
+Inbound.WireguardSettings = class extends XrayCommonClass {
+    constructor(protocol, mtu=1420, secretKey=Wireguard.generateKeypair().privateKey, peers=[new Inbound.WireguardSettings.Peer()], kernelMode=false) {
+        super(protocol);
+        this.mtu = mtu;
+        this.secretKey = secretKey;
+        this.pubKey = secretKey.length>0 ? Wireguard.generateKeypair(secretKey).publicKey : '';
+        this.peers = peers;
+        this.kernelMode = kernelMode;
+    }
+
+    addPeer() {
+        this.peers.push(new Inbound.WireguardSettings.Peer());
+    }
+
+    delPeer(index) {
+        this.peers.splice(index, 1);
+    }
+
+    static fromJson(json={}){
+        return new Inbound.WireguardSettings(
+            Protocols.WIREGUARD,
+            json.mtu,
+            json.secretKey,
+            json.peers.map(peer => Inbound.WireguardSettings.Peer.fromJson(peer)),
+            json.kernelMode,
+        );
+    }
+
+    toJson() {
+        return {
+            mtu: this.mtu?? undefined,
+            secretKey: this.secretKey,
+            peers: Inbound.WireguardSettings.Peer.toJsonArray(this.peers),
+            kernelMode: this.kernelMode,
+        };
+    }
+};
+
+Inbound.WireguardSettings.Peer = class extends XrayCommonClass {
+    constructor(publicKey=Wireguard.generateKeypair().publicKey, psk='', allowedIPs=['0.0.0.0/0','::/0'], keepAlive=0) {
+        super();
+        this.publicKey = publicKey;
+        this.psk = psk;
+        this.allowedIPs = allowedIPs;
+        this.keepAlive = keepAlive;
+    }
+
+    static fromJson(json={}){
+        return new Inbound.WireguardSettings.Peer(
+            json.publicKey,
+            json.preSharedKey,
+            json.allowedIPs,
+            json.keepAlive
+        );
+    }
+
+    toJson() {
+        return {
+            publicKey: this.publicKey,
+            preSharedKey: this.psk.length>0 ? this.psk : undefined,
+            allowedIPs: this.allowedIPs,
+            keepAlive: this.keepAlive?? undefined,
+        };
     }
 };
