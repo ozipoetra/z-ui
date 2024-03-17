@@ -52,7 +52,10 @@ elif [[ "${release}" == "ubuntu" ]]; then
     if [[ ${os_version} -lt 20 ]]; then
         echo -e "${red} Please use Ubuntu 20 or higher version!${plain}\n" && exit 1
     fi
-
+elif [[ "${release}" == "kali" ]]; then
+    if [[ ${os_version} -lt 2023.4 ]]; then
+        echo -e "${red} Please use kali 2023.4 or higher version!${plain}\n" && exit 1
+    fi
 elif [[ "${release}" == "fedora" ]]; then
     if [[ ${os_version} -lt 36 ]]; then
         echo -e "${red} Please use Fedora 36 or higher version!${plain}\n" && exit 1
