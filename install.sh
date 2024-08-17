@@ -127,7 +127,7 @@ gen_random_string() {
     echo "$random_string"
 }
 
-# This function will be called when user installed x-ui out of security
+# This function will be called when user installed z-ui out of security
 config_after_install() {
     echo -e "${yellow}Install/update finished! For security it's recommended to modify panel settings ${plain}"
     read -p "Would you like to customize the panel settings? (If not, random settings will be applied) [y/n]: " config_confirm
@@ -141,107 +141,107 @@ config_after_install() {
         read -p "Please set up the web base path (ip:port/webbasepath/): " config_webBasePath
         echo -e "${yellow}Your web base path is: ${config_webBasePath}${plain}"
         echo -e "${yellow}Initializing, please wait...${plain}"
-        /usr/local/x-ui/x-ui setting -username ${config_account} -password ${config_password}
+        /usr/local/z-ui/z-ui setting -username ${config_account} -password ${config_password}
         echo -e "${yellow}Account name and password set successfully!${plain}"
-        /usr/local/x-ui/x-ui setting -port ${config_port}
+        /usr/local/z-ui/z-ui setting -port ${config_port}
         echo -e "${yellow}Panel port set successfully!${plain}"
-        /usr/local/x-ui/x-ui setting -webBasePath ${config_webBasePath}
+        /usr/local/z-ui/z-ui setting -webBasePath ${config_webBasePath}
         echo -e "${yellow}Web base path set successfully!${plain}"
     else
         echo -e "${red}Cancel...${plain}"
-        if [[ ! -f "/etc/x-ui/x-ui.db" ]]; then
+        if [[ ! -f "/etc/z-ui/z-ui.db" ]]; then
             local usernameTemp=$(head -c 6 /dev/urandom | base64)
             local passwordTemp=$(head -c 6 /dev/urandom | base64)
             local webBasePathTemp=$(gen_random_string 10)
-            /usr/local/x-ui/x-ui setting -username ${usernameTemp} -password ${passwordTemp} -webBasePath ${webBasePathTemp}
+            /usr/local/z-ui/z-ui setting -username ${usernameTemp} -password ${passwordTemp} -webBasePath ${webBasePathTemp}
             echo -e "This is a fresh installation, will generate random login info for security concerns:"
             echo -e "###############################################"
             echo -e "${green}Username: ${usernameTemp}${plain}"
             echo -e "${green}Password: ${passwordTemp}${plain}"
             echo -e "${green}WebBasePath: ${webBasePathTemp}${plain}"
             echo -e "###############################################"
-            echo -e "${yellow}If you forgot your login info, you can type "x-ui settings" to check after installation${plain}"
+            echo -e "${yellow}If you forgot your login info, you can type "z-ui settings" to check after installation${plain}"
         else
-            echo -e "${yellow}This is your upgrade, will keep old settings. If you forgot your login info, you can type "x-ui settings" to check${plain}"
+            echo -e "${yellow}This is your upgrade, will keep old settings. If you forgot your login info, you can type "z-ui settings" to check${plain}"
         fi
     fi
-    /usr/local/x-ui/x-ui migrate
+    /usr/local/z-ui/z-ui migrate
 }
 
-install_x-ui() {
+install_z-ui() {
     cd /usr/local/
 
     if [ $# == 0 ]; then
-        last_version=$(curl -Ls "https://api.github.com/repos/MHSanaei/3x-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        last_version=$(curl -Ls "https://api.github.com/repos/ozipoetra/z-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
         if [[ ! -n "$last_version" ]]; then
-            echo -e "${red}Failed to fetch x-ui version, it maybe due to Github API restrictions, please try it later${plain}"
+            echo -e "${red}Failed to fetch z-ui version, it maybe due to Github API restrictions, please try it later${plain}"
             exit 1
         fi
-        echo -e "Got x-ui latest version: ${last_version}, beginning the installation..."
-        wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(arch).tar.gz https://github.com/MHSanaei/3x-ui/releases/download/${last_version}/x-ui-linux-$(arch).tar.gz
+        echo -e "Got z-ui latest version: ${last_version}, beginning the installation..."
+        wget -N --no-check-certificate -O /usr/local/z-ui-linux-$(arch).tar.gz https://github.com/ozipoetra/z-ui/releases/download/${last_version}/z-ui-linux-$(arch).tar.gz
         if [[ $? -ne 0 ]]; then
-            echo -e "${red}Downloading x-ui failed, please be sure that your server can access Github ${plain}"
+            echo -e "${red}Downloading z-ui failed, please be sure that your server can access Github ${plain}"
             exit 1
         fi
     else
         last_version=$1
-        url="https://github.com/MHSanaei/3x-ui/releases/download/${last_version}/x-ui-linux-$(arch).tar.gz"
-        echo -e "Beginning to install x-ui $1"
-        wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(arch).tar.gz ${url}
+        url="https://github.com/ozipoetra/z-ui/releases/download/${last_version}/z-ui-linux-$(arch).tar.gz"
+        echo -e "Beginning to install z-ui $1"
+        wget -N --no-check-certificate -O /usr/local/z-ui-linux-$(arch).tar.gz ${url}
         if [[ $? -ne 0 ]]; then
-            echo -e "${red}Download x-ui $1 failed,please check the version exists ${plain}"
+            echo -e "${red}Download z-ui $1 failed,please check the version exists ${plain}"
             exit 1
         fi
     fi
 
-    if [[ -e /usr/local/x-ui/ ]]; then
-        systemctl stop x-ui
-        rm /usr/local/x-ui/ -rf
+    if [[ -e /usr/local/z-ui/ ]]; then
+        systemctl stop z-ui
+        rm /usr/local/z-ui/ -rf
     fi
 
-    tar zxvf x-ui-linux-$(arch).tar.gz
-    rm x-ui-linux-$(arch).tar.gz -f
-    cd x-ui
-    chmod +x x-ui
+    tar zxvf z-ui-linux-$(arch).tar.gz
+    rm z-ui-linux-$(arch).tar.gz -f
+    cd z-ui
+    chmod +x z-ui
 
     # Check the system's architecture and rename the file accordingly
     if [[ $(arch) == "armv5" || $(arch) == "armv6" || $(arch) == "armv7" ]]; then
-        mv bin/xray-linux-$(arch) bin/xray-linux-arm
-        chmod +x bin/xray-linux-arm
+        mv bin/ozip-linux-$(arch) bin/ozip-linux-arm
+        chmod +x bin/ozip-linux-arm
     fi
 
-    chmod +x x-ui bin/xray-linux-$(arch)
-    cp -f x-ui.service /etc/systemd/system/
-    wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/MHSanaei/3x-ui/main/x-ui.sh
-    chmod +x /usr/local/x-ui/x-ui.sh
-    chmod +x /usr/bin/x-ui
+    chmod +x z-ui bin/ozip-linux-$(arch)
+    cp -f z-ui.service /etc/systemd/system/
+    wget --no-check-certificate -O /usr/bin/z-ui https://raw.githubusercontent.com/ozipoetra/z-ui/main/z-ui.sh
+    chmod +x /usr/local/z-ui/z-ui.sh
+    chmod +x /usr/bin/z-ui
     config_after_install
 
     systemctl daemon-reload
-    systemctl enable x-ui
-    systemctl start x-ui
-    echo -e "${green}x-ui ${last_version}${plain} installation finished, it is running now..."
+    systemctl enable z-ui
+    systemctl start z-ui
+    echo -e "${green}z-ui ${last_version}${plain} installation finished, it is running now..."
     echo -e ""
-    echo -e "x-ui control menu usages: "
+    echo -e "z-ui control menu usages: "
     echo -e "----------------------------------------------"
     echo -e "SUBCOMMANDS:"
-    echo -e "x-ui              - Admin Management Script"
-    echo -e "x-ui start        - Start"
-    echo -e "x-ui stop         - Stop"
-    echo -e "x-ui restart      - Restart"
-    echo -e "x-ui status       - Current Status"
-    echo -e "x-ui settings     - Current Settings"
-    echo -e "x-ui enable       - Enable Autostart on OS Startup"
-    echo -e "x-ui disable      - Disable Autostart on OS Startup"
-    echo -e "x-ui log          - Check logs"
-    echo -e "x-ui banlog       - Check Fail2ban ban logs"
-    echo -e "x-ui update       - Update"
-    echo -e "x-ui custom       - custom version"
-    echo -e "x-ui install      - Install"
-    echo -e "x-ui uninstall    - Uninstall"
+    echo -e "z-ui              - Admin Management Script"
+    echo -e "z-ui start        - Start"
+    echo -e "z-ui stop         - Stop"
+    echo -e "z-ui restart      - Restart"
+    echo -e "z-ui status       - Current Status"
+    echo -e "z-ui settings     - Current Settings"
+    echo -e "z-ui enable       - Enable Autostart on OS Startup"
+    echo -e "z-ui disable      - Disable Autostart on OS Startup"
+    echo -e "z-ui log          - Check logs"
+    echo -e "z-ui banlog       - Check Fail2ban ban logs"
+    echo -e "z-ui update       - Update"
+    echo -e "z-ui custom       - custom version"
+    echo -e "z-ui install      - Install"
+    echo -e "z-ui uninstall    - Uninstall"
     echo -e "----------------------------------------------"
 }
 
 echo -e "${green}Running...${plain}"
 install_base
-install_x-ui $1
+install_z-ui $1

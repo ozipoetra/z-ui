@@ -1,4 +1,4 @@
-name: Release 3X-UI
+name: Release Z-UI
 
 on:
   push:
@@ -45,7 +45,7 @@ jobs:
             sudo apt install gcc-s390x-linux-gnu
           fi
 
-      - name: Build x-ui
+      - name: Build z-ui
         run: |
           export CGO_ENABLED=1
           export GOOS=linux
@@ -74,13 +74,13 @@ jobs:
           fi
           go build -o xui-release -v main.go
           
-          mkdir x-ui
-          cp xui-release x-ui/
-          cp x-ui.service x-ui/
-          cp x-ui.sh x-ui/
-          mv x-ui/xui-release x-ui/x-ui
-          mkdir x-ui/bin
-          cd x-ui/bin
+          mkdir z-ui
+          cp xui-release z-ui/
+          cp z-ui.service z-ui/
+          cp z-ui.sh z-ui/
+          mv z-ui/xui-release z-ui/z-ui
+          mkdir z-ui/bin
+          cd z-ui/bin
           
           # Download dependencies
           Xray_URL="https://github.com/XTLS/Xray-core/releases/download/v1.8.23/"
@@ -120,23 +120,23 @@ jobs:
           wget -O geosite_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
           wget -O geoip_VN.dat https://github.com/vuong2023/vn-v2ray-rules/releases/latest/download/geoip.dat
           wget -O geosite_VN.dat https://github.com/vuong2023/vn-v2ray-rules/releases/latest/download/geosite.dat
-          mv xray xray-linux-${{ matrix.platform }}
+          mv xray ozip-linux-${{ matrix.platform }}
           cd ../..
           
       - name: Package
-        run: tar -zcvf x-ui-linux-${{ matrix.platform }}.tar.gz x-ui
+        run: tar -zcvf z-ui-linux-${{ matrix.platform }}.tar.gz z-ui
 
       - name: Upload files to Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: x-ui-linux-${{ matrix.platform }}
-          path: ./x-ui-linux-${{ matrix.platform }}.tar.gz
+          name: z-ui-linux-${{ matrix.platform }}
+          path: ./z-ui-linux-${{ matrix.platform }}.tar.gz
 
       - name: Upload files to GH release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: x-ui-linux-${{ matrix.platform }}.tar.gz
-          asset_name: x-ui-linux-${{ matrix.platform }}.tar.gz
+          file: z-ui-linux-${{ matrix.platform }}.tar.gz
+          asset_name: z-ui-linux-${{ matrix.platform }}.tar.gz
           prerelease: true
