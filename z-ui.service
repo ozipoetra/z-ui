@@ -7,7 +7,7 @@ Wants=network.target
 Environment="XRAY_VMESS_AEAD_FORCED=false"
 Type=simple
 WorkingDirectory=/usr/local/z-ui/
-ExecStart=/usr/local/x-ui/z-ui
+ExecStart=/usr/local/z-ui/z-ui
 Restart=on-failure
 RestartSec=5s
 
